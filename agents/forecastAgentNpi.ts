@@ -17,6 +17,10 @@ export interface LowConfidenceFlag {
   skuNode: string;
   confidenceScore: number;
   reason: string;
+  riskCategory?: string;
+  rootCauseDetails?: string;
+  impactOnForecast?: string;
+  recommendedMitigation?: string;
 }
 
 export interface ForecastNpiResult {
@@ -49,7 +53,7 @@ export async function runForecastNpi(params: {
        - Calculate MAPE (Mean Absolute Percentage Error) for each model.
        - Select the Champion model based on accuracy and user choice.
     2. Construct Hierarchical Forecast. Break down the target product's launch quarter requirements across Regions (North America, APAC, EMEA) and Customers (Hyperscale Cloud, Enterprise OEM, Government & Research).
-    3. Identify Low Confidence Planning Nodes. Flag specific SKUs or customer nodes where adoption confidence is low and generate structural warnings.
+    3. Identify Low Confidence Planning Nodes. Flag specific SKUs or customer nodes where adoption confidence is low (<80%) and generate structural warnings with explicit explainability (root cause, risk category, forecast impact, recommended mitigation).
     4. Return reasoning steps, detailed model metrics, hierarchical forecasts, flags, and timestamped activity logs.
 
     Format the response as a JSON object with:
@@ -58,7 +62,7 @@ export async function runForecastNpi(params: {
     - challengerModels: array of strings
     - modelMetrics: array of { modelName: string, mape: number, status: string }
     - hierarchicalForecast: array of { node: string, naUnits: number, apacUnits: number, emeaUnits: number }
-    - lowConfidenceFlags: array of { skuNode: string, confidenceScore: number, reason: string }
+    - lowConfidenceFlags: array of { skuNode: string, confidenceScore: number, reason: string, riskCategory: string, rootCauseDetails: string, impactOnForecast: string, recommendedMitigation: string }
     - confidenceScore: number (0-100)
     - keyFactors: array of strings
     - humanActionRequired: string
@@ -96,8 +100,24 @@ export async function runForecastNpi(params: {
   ];
 
   const lowConfidenceFlags: LowConfidenceFlag[] = [
-    { skuNode: "EMEA Gov Cluster Node 4B", confidenceScore: 68, reason: "Strict local sovereign data center export policy delays impact supply validation schedules." },
-    { skuNode: "APAC OEM Liquid Cooled SKU C9", confidenceScore: 72, reason: "Sourcing bottleneck for specialized quick-release cooling manifolds." }
+    { 
+      skuNode: "EMEA Sovereign Cloud Node 4B", 
+      confidenceScore: 68, 
+      reason: "Geopolitical compliance restrictions & local data sovereignty audit cycles.",
+      riskCategory: "Regulatory & Compliance Risk",
+      rootCauseDetails: "Confidence dropped to 68% due to a mandatory 45-day EU Sovereign Data Center export compliance review. Zero historical deployment baseline exists for this localized encrypted enclave, driving up variance between Trend Extrapolation and Pattern-Recognition algorithms.",
+      impactOnForecast: "Potential ±2,400 unit delivery delay in Q2-Q3 schedules if audit clearance is deferred.",
+      recommendedMitigation: "Pre-authorize compliant staging in Frankfurt hub and hold 15% buffer inventory under escrow."
+    },
+    { 
+      skuNode: "APAC OEM Liquid-Cooled SKU C9", 
+      confidenceScore: 72, 
+      reason: "Supply bottleneck & single-source manifold lead time uncertainty.",
+      riskCategory: "Supply Chain & Hardware Bottleneck",
+      rootCauseDetails: "Confidence reduced to 72% because quick-disconnect manifold valves for the 800W liquid cold plates are currently constrained to a single Tier-2 vendor in Japan, with lead times fluctuating by ±3.5 weeks.",
+      impactOnForecast: "Risk of 12-18% revenue deferral if manifold assembly yields do not stabilize by M2 of ramp.",
+      recommendedMitigation: "Qualify secondary Taiwanese manifold supplier and fast-track air freight for initial 5,000 units."
+    }
   ];
 
   const fallback: ForecastNpiResult = {
