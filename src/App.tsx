@@ -56,7 +56,8 @@ import {
   DemandForecastResult, 
   ForecastNpiResult, 
   OrchestratorResult,
-  NvSentinelNode
+  NvSentinelNode,
+  LowConfidenceFlag
 } from "./types.ts";
 
 // ==========================================
@@ -532,6 +533,164 @@ function HoverModelMetricCard({ m }: { m: { modelName: string; mape: number; sta
           {desc}
         </div>
       )}
+    </div>
+  );
+}
+
+function MapeInfoPopover() {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-nvidia-green/10 border border-nvidia-green/30 text-nvidia-green text-[10px] font-mono hover:bg-nvidia-green/20 transition-all cursor-help"
+      >
+        <Info className="h-3 w-3" />
+        <span>What is MAPE?</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 bottom-full left-0 mb-2 w-72 sm:w-80 bg-[#0d1320] border border-nvidia-border rounded-lg p-3 text-[11px] text-slate-200 leading-normal shadow-2xl shadow-black/90 font-sans pointer-events-none animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <div className="absolute border-4 border-transparent border-t-[#0d1320] -bottom-2 left-4"></div>
+          <div className="flex items-center gap-1.5 text-nvidia-green font-mono font-semibold text-[10px] uppercase tracking-wider mb-1.5 border-b border-nvidia-border/60 pb-1">
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span>MAPE KPI Explainability</span>
+          </div>
+          <div className="space-y-1.5 text-slate-300">
+            <p>
+              <strong className="text-white">MAPE (Mean Absolute Percentage Error)</strong> measures average forecast inaccuracy as an absolute percentage of actual demand outcomes.
+            </p>
+            <div className="bg-[#05080e] p-1.5 rounded border border-nvidia-border/50 text-[10px] font-mono text-nvidia-green text-center">
+              MAPE = (1/n) × Σ |(Actual - Forecast) / Actual| × 100%
+            </div>
+            <p className="text-[10px] text-slate-400 leading-relaxed">
+              <strong className="text-slate-200">Why used in NPI:</strong> New silicon architectures have no pre-existing sales history. MAPE normalizes error percentages across drastically different shipment scale hubs (e.g. 15,000 Hyperscale units vs 1,500 Government units), allowing fair Champion model selection without scale bias.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AllocationsInfoPopover() {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-nvidia-green/10 border border-nvidia-green/30 text-nvidia-green text-[10px] font-mono hover:bg-nvidia-green/20 transition-all cursor-help"
+      >
+        <Info className="h-3 w-3" />
+        <span>Allocation Explainability</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 bottom-full left-0 mb-2 w-72 sm:w-80 bg-[#0d1320] border border-nvidia-border rounded-lg p-3 text-[11px] text-slate-200 leading-normal shadow-2xl shadow-black/90 font-sans pointer-events-none animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <div className="absolute border-4 border-transparent border-t-[#0d1320] -bottom-2 left-4"></div>
+          <div className="flex items-center gap-1.5 text-nvidia-green font-mono font-semibold text-[10px] uppercase tracking-wider mb-1.5 border-b border-nvidia-border/60 pb-1">
+            <Layers className="h-3.5 w-3.5" />
+            <span>Hierarchical Allocations Line Chart</span>
+          </div>
+          <div className="space-y-1.5 text-slate-300">
+            <p>
+              This line chart displays <strong className="text-white font-mono">disaggregated regional target allocations</strong> across Customer Node tiers (Hyperscale, Enterprise OEM, Government).
+            </p>
+            <ul className="list-disc pl-3 text-[10px] space-y-1 text-slate-300">
+              <li><strong className="text-nvidia-green">North America Hub:</strong> Highest initial volume driven by Tier-1 hyperscale cloud datacenters.</li>
+              <li><strong className="text-cyan-400">APAC Hub:</strong> High OEM server manufacturer ramp (Dell, Supermicro, Foxconn assembly).</li>
+              <li><strong className="text-amber-400">EMEA Hub:</strong> Specialized sovereign cloud & national research laboratory allocations.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LowConfidenceExplainabilityCard({ f }: { f: LowConfidenceFlag }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className="bg-[#12080a] border border-rose-500/30 hover:border-rose-500/60 rounded-lg p-3.5 text-xs flex flex-col gap-2.5 transition-all">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-500/20 pb-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+          <div>
+            <strong className="text-rose-300 font-mono text-xs block">{f.skuNode}</strong>
+            {f.riskCategory && (
+              <span className="text-[10px] font-mono text-rose-400/80 bg-rose-950/60 border border-rose-500/20 px-1.5 py-0.2 rounded mt-0.5 inline-block">
+                {f.riskCategory}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold px-2 py-0.5 font-mono rounded-full flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+            {f.confidenceScore}% Confidence
+          </span>
+        </div>
+      </div>
+
+      {/* Main Warning Reason */}
+      <p className="text-slate-200 font-sans text-[11px] leading-relaxed">
+        <strong className="text-rose-300">Primary Warning:</strong> {f.reason}
+      </p>
+
+      {/* Why Flagged Low Confidence Section */}
+      <div className="bg-[#0b0406] border border-rose-900/40 rounded p-2.5 text-[11px] flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-rose-400 font-semibold flex items-center gap-1">
+            <HelpCircle className="h-3.5 w-3.5 text-rose-400" />
+            <span>Why Flagged Low Confidence? (Root Cause & Model Analysis)</span>
+          </span>
+          <button 
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-[10px] text-slate-400 hover:text-white underline font-mono cursor-pointer"
+          >
+            {showDetails ? "Collapse Analysis" : "Expand Explainability Details"}
+          </button>
+        </div>
+        <p className="text-slate-300 leading-normal text-[11px]">
+          {f.rootCauseDetails || f.reason}
+        </p>
+        {showDetails && (
+          <div className="mt-1.5 pt-1.5 border-t border-rose-900/30 text-[10px] text-slate-400 space-y-1 font-mono">
+            <div className="flex justify-between">
+              <span>Confidence Threshold Trigger:</span>
+              <span className="text-rose-300">&lt; 80% (NVIDIA NPI Governance Protocol)</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Primary Driver:</span>
+              <span className="text-rose-300">{f.riskCategory || "Supply & Volatility Risk"}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Impact & Mitigation Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+        {f.impactOnForecast && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2">
+            <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider block font-semibold mb-0.5">Forecast Impact Potential</span>
+            <span className="text-slate-200">{f.impactOnForecast}</span>
+          </div>
+        )}
+        {f.recommendedMitigation && (
+          <div className="bg-nvidia-green/10 border border-nvidia-green/20 rounded p-2">
+            <span className="text-[9px] font-mono text-nvidia-green uppercase tracking-wider block font-semibold mb-0.5">AI Recommended Mitigation</span>
+            <span className="text-slate-200">{f.recommendedMitigation}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -3106,7 +3265,13 @@ export default function App() {
 
                         {/* Model comparison table */}
                         <div className="flex flex-col gap-2">
-                          <h5 className="text-xs font-mono text-slate-300">Tested Models MAPE Error Ratings</h5>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-xs font-mono text-slate-300">Tested Models MAPE Error Ratings</h5>
+                              <MapeInfoPopover />
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">Lower MAPE = Higher Model Precision</span>
+                          </div>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                             {npiResult.modelMetrics.map((m, idx) => (
                               <HoverModelMetricCard key={idx} m={m} />
@@ -3114,46 +3279,138 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Hierarchical breakdown table */}
-                        <div className="flex flex-col gap-2">
-                          <h5 className="text-xs font-mono text-slate-300">Hierarchical Node Target Allocations (Units)</h5>
-                          <div className="border border-nvidia-border/80 rounded bg-[#090d16] text-[11px] font-mono overflow-hidden">
-                            <div className="grid grid-cols-12 bg-slate-800/40 border-b border-nvidia-border px-2.5 py-1 text-slate-300 uppercase tracking-wider text-[10px]">
-                              <div className="col-span-5">Customer Node</div>
-                              <div className="col-span-2 text-right">NA Hub</div>
-                              <div className="col-span-2 text-right">APAC Hub</div>
-                              <div className="col-span-3 text-right">EMEA Hub</div>
+                        {/* Hierarchical breakdown LINE CHART */}
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-xs font-mono text-slate-300">Hierarchical Node Target Allocations (Units)</h5>
+                              <AllocationsInfoPopover />
                             </div>
-                            <div className="divide-y divide-nvidia-border/50">
-                              {npiResult.hierarchicalForecast.map((h, idx) => (
-                                <div key={idx} className="grid grid-cols-12 px-2.5 py-2 hover:bg-slate-800/15">
-                                  <div className="col-span-5 text-white font-sans">{h.node}</div>
-                                  <div className="col-span-2 text-right text-slate-300">{(h.naUnits).toLocaleString()}</div>
-                                  <div className="col-span-2 text-right text-slate-300">{(h.apacUnits).toLocaleString()}</div>
-                                  <div className="col-span-3 text-right text-nvidia-green font-bold">{(h.emeaUnits).toLocaleString()}</div>
-                                </div>
-                              ))}
+                            <div className="flex items-center gap-3 text-[10px] font-mono">
+                              <span className="flex items-center gap-1.5 text-slate-300">
+                                <span className="w-2.5 h-2.5 rounded-full bg-nvidia-green inline-block"></span> NA Hub
+                              </span>
+                              <span className="flex items-center gap-1.5 text-slate-300">
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> APAC Hub
+                              </span>
+                              <span className="flex items-center gap-1.5 text-slate-300">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> EMEA Hub
+                              </span>
                             </div>
+                          </div>
+
+                          {/* Regional Totals KPI Callouts */}
+                          <div className="grid grid-cols-3 gap-2 text-center text-xs bg-[#090d16] border border-nvidia-border/70 rounded p-2.5 font-mono">
+                            <div>
+                              <span className="text-[10px] text-slate-400 block uppercase">NA Hub Target</span>
+                              <span className="text-sm font-bold text-nvidia-green">
+                                {npiResult.hierarchicalForecast.reduce((acc, curr) => acc + curr.naUnits, 0).toLocaleString()} units
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block uppercase">APAC Hub Target</span>
+                              <span className="text-sm font-bold text-cyan-400">
+                                {npiResult.hierarchicalForecast.reduce((acc, curr) => acc + curr.apacUnits, 0).toLocaleString()} units
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block uppercase">EMEA Hub Target</span>
+                              <span className="text-sm font-bold text-amber-400">
+                                {npiResult.hierarchicalForecast.reduce((acc, curr) => acc + curr.emeaUnits, 0).toLocaleString()} units
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Recharts Line Chart */}
+                          <div className="h-64 w-full bg-[#090d16] border border-nvidia-border/80 rounded p-3 pt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart 
+                                data={npiResult.hierarchicalForecast}
+                                margin={{ top: 10, right: 30, left: 10, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1f293d" vertical={false} />
+                                <XAxis 
+                                  dataKey="node" 
+                                  stroke="#64748b" 
+                                  fontSize={10} 
+                                  tickLine={false}
+                                  interval={0}
+                                  tick={({ x, y, payload }) => (
+                                    <g transform={`translate(${x},${y})`}>
+                                      <text x={0} y={12} dy={4} textAnchor="middle" fill="#94a3b8" fontSize={10} fontFamily="monospace">
+                                        {payload.value.length > 22 ? payload.value.substring(0, 20) + '...' : payload.value}
+                                      </text>
+                                    </g>
+                                  )}
+                                />
+                                <YAxis 
+                                  stroke="#64748b" 
+                                  fontSize={10} 
+                                  tickLine={false}
+                                  tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ 
+                                    backgroundColor: '#0d1320', 
+                                    borderColor: '#2d3748', 
+                                    borderRadius: '8px', 
+                                    fontSize: '11px',
+                                    color: '#f8fafc',
+                                    fontFamily: 'monospace',
+                                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8)'
+                                  }}
+                                  formatter={(value: any, name: any) => [
+                                    `${Number(value).toLocaleString()} units`, 
+                                    name === 'naUnits' ? 'North America Hub' : name === 'apacUnits' ? 'APAC Hub' : 'EMEA Hub'
+                                  ]}
+                                  labelStyle={{ color: '#76b900', fontWeight: 'bold', marginBottom: '4px' }}
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="naUnits" 
+                                  name="naUnits" 
+                                  stroke="#76b900" 
+                                  strokeWidth={3} 
+                                  dot={{ r: 4, fill: '#0d1320', stroke: '#76b900', strokeWidth: 2 }}
+                                  activeDot={{ r: 6, fill: '#76b900' }}
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="apacUnits" 
+                                  name="apacUnits" 
+                                  stroke="#38bdf8" 
+                                  strokeWidth={3} 
+                                  dot={{ r: 4, fill: '#0d1320', stroke: '#38bdf8', strokeWidth: 2 }}
+                                  activeDot={{ r: 6, fill: '#38bdf8' }}
+                                />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="emeaUnits" 
+                                  name="emeaUnits" 
+                                  stroke="#f59e0b" 
+                                  strokeWidth={3} 
+                                  dot={{ r: 4, fill: '#0d1320', stroke: '#f59e0b', strokeWidth: 2 }}
+                                  activeDot={{ r: 6, fill: '#f59e0b' }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
                           </div>
                         </div>
 
-                        {/* Low confidence flags list */}
+                        {/* Low confidence flags list with rich explainability cards */}
                         {npiResult.lowConfidenceFlags.length > 0 && (
-                          <div className="flex flex-col gap-2">
-                            <h5 className="text-xs font-mono text-rose-400 flex items-center gap-1">
-                              <AlertTriangle className="h-3.5 w-3.5" /> Low Confidence Flagged Items
-                            </h5>
-                            <div className="space-y-2">
+                          <div className="flex flex-col gap-2.5">
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-xs font-mono text-rose-400 flex items-center gap-1.5 font-bold">
+                                <AlertTriangle className="h-4 w-4" /> Low Confidence Flagged Items & Root Cause Analysis
+                              </h5>
+                              <span className="text-[10px] font-mono text-rose-300/80 bg-rose-950/60 border border-rose-500/20 px-2 py-0.5 rounded">
+                                Governance Threshold: &lt; 80% Confidence
+                              </span>
+                            </div>
+                            <div className="space-y-3">
                               {npiResult.lowConfidenceFlags.map((f, idx) => (
-                                <div key={idx} className="bg-rose-500/10 border border-rose-500/20 p-2.5 rounded text-xs flex flex-col gap-1">
-                                  <div className="flex items-center justify-between">
-                                    <strong className="text-rose-400 font-mono text-[11px]">{f.skuNode}</strong>
-                                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 font-mono rounded">
-                                      {f.confidenceScore}% Confidence
-                                    </span>
-                                  </div>
-                                  <p className="text-slate-300 font-sans leading-normal text-[11px]">{f.reason}</p>
-                                </div>
+                                <LowConfidenceExplainabilityCard key={idx} f={f} />
                               ))}
                             </div>
                           </div>
