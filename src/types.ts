@@ -124,6 +124,10 @@ export interface LowConfidenceFlag {
   skuNode: string;
   confidenceScore: number;
   reason: string;
+  riskCategory?: string;
+  rootCauseDetails?: string;
+  impactOnForecast?: string;
+  recommendedMitigation?: string;
 }
 
 export interface ForecastNpiResult {
