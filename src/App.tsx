@@ -31,7 +31,18 @@ import {
   Zap,
   Server,
   Radio,
-  Bell
+  Bell,
+  Package,
+  Truck,
+  ShoppingCart,
+  Plus,
+  Search,
+  Building2,
+  Tag,
+  Filter,
+  MapPin,
+  CornerDownRight,
+  X
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -57,7 +68,12 @@ import {
   ForecastNpiResult, 
   OrchestratorResult,
   NvSentinelNode,
-  LowConfidenceFlag
+  LowConfidenceFlag,
+  RepairSchedule,
+  SparePartItem,
+  PartsDispatchOrder,
+  ProcurementReplenishmentOrder,
+  AttachedPartItem
 } from "./types.ts";
 
 // ==========================================
@@ -280,6 +296,205 @@ const NV_SENTINEL_NODES: NvSentinelNode[] = [
   }
 ];
 
+const INITIAL_SPARE_PARTS: SparePartItem[] = [
+  {
+    id: "part-b200-board",
+    partNumber: "NV-PART-B200-HGX-01",
+    name: "NVIDIA HGX B200 8-GPU Baseboard Module",
+    category: "GPU Accelerator Module",
+    compatibleHardware: ["NVIDIA HGX B200 (8x B200 GPUs)", "Blackwell B200 NVL72"],
+    inStock: 12,
+    safetyStock: 10,
+    unitCostUsd: 38500,
+    depotLocation: "Ashburn NV-Depot #4",
+    supplier: "Foxconn / NVIDIA Santa Clara Logistics",
+    leadTimeDays: 14
+  },
+  {
+    id: "part-vrm-phase",
+    partNumber: "NV-PART-VRM-12V-V03",
+    name: "MOSFET Power Regulator Phase-3 VRM Module",
+    category: "VRM Power Phase",
+    compatibleHardware: ["NVIDIA HGX B200 (8x B200 GPUs)", "NVIDIA DGX H100 SuperPOD"],
+    inStock: 14,
+    safetyStock: 20, // Below safety threshold!
+    unitCostUsd: 1250,
+    depotLocation: "Ashburn NV-Depot #4",
+    supplier: "Monolithic Power Systems (MPS)",
+    leadTimeDays: 7
+  },
+  {
+    id: "part-qd-fitting",
+    partNumber: "NV-PART-COOL-QD-50",
+    name: "Quick-Disconnect Liquid Cooling Valve Fitting Assembly",
+    category: "Liquid Cooling & Fittings",
+    compatibleHardware: ["NVIDIA Grace Hopper GH200", "NVIDIA HGX B200 (8x B200 GPUs)"],
+    inStock: 8,
+    safetyStock: 15, // Below safety threshold!
+    unitCostUsd: 850,
+    depotLocation: "Forest City Depot #1",
+    supplier: "Stäubli Fluid Connectors",
+    leadTimeDays: 10
+  },
+  {
+    id: "part-h100-sxm",
+    partNumber: "NV-PART-H100-SXM-80G",
+    name: "NVIDIA H100 SXM5 80GB GPU Board",
+    category: "GPU Accelerator Module",
+    compatibleHardware: ["NVIDIA DGX H100 SuperPOD", "HGX H100 8-Way System"],
+    inStock: 18,
+    safetyStock: 10,
+    unitCostUsd: 28900,
+    depotLocation: "Phoenix West Depot #2",
+    supplier: "TSMC / NVIDIA Logistics",
+    leadTimeDays: 12
+  },
+  {
+    id: "part-nvlink-retimer",
+    partNumber: "NV-PART-NVL-SW-RTM",
+    name: "NVLink Switch Tray Retimer IC & Fabric Substrate",
+    category: "NVLink Interconnect",
+    compatibleHardware: ["NVIDIA DGX H100 SuperPOD", "Blackwell B200 NVL72"],
+    inStock: 22,
+    safetyStock: 15,
+    unitCostUsd: 4200,
+    depotLocation: "Phoenix West Depot #2",
+    supplier: "Astera Labs / NVIDIA",
+    leadTimeDays: 8
+  },
+  {
+    id: "part-hbm3-stack",
+    partNumber: "NV-PART-HBM3-192G",
+    name: "HBM3 High-Bandwidth Memory Substrate Module (24GB Stack)",
+    category: "Memory Substrate",
+    compatibleHardware: ["NVIDIA DGX H100 SuperPOD", "NVIDIA HGX B200 (8x B200 GPUs)"],
+    inStock: 9,
+    safetyStock: 10, // Below safety stock!
+    unitCostUsd: 6500,
+    depotLocation: "Phoenix West Depot #2",
+    supplier: "SK Hynix / Micron",
+    leadTimeDays: 18
+  },
+  {
+    id: "part-gh200-coldplate",
+    partNumber: "NV-PART-GH200-CP-02",
+    name: "GH200 Micro-Channel Liquid Cold Plate",
+    category: "Liquid Cooling & Fittings",
+    compatibleHardware: ["NVIDIA Grace Hopper GH200"],
+    inStock: 15,
+    safetyStock: 8,
+    unitCostUsd: 2100,
+    depotLocation: "Forest City Depot #1",
+    supplier: "Asetek / CoolIT Systems",
+    leadTimeDays: 9
+  }
+];
+
+const INITIAL_REPAIR_SCHEDULES: RepairSchedule[] = [
+  {
+    id: "rep-001",
+    ticketNumber: "SRV-902148",
+    nodeId: "sentinel-msft-02",
+    clusterName: "Microsoft Azure West US3 - Pod 09",
+    nodeType: "NVIDIA DGX H100 SuperPOD",
+    serialNumber: "SN-AZ-H100-209481",
+    defectReason: "HBM3 Memory ECC Errors & High Junction Temp",
+    assignedTechnician: "Alex Rivera (Certified Enterprise Field Eng)",
+    depotLocation: "Phoenix West Depot #2",
+    scheduledDate: "2026-08-03 14:00 UTC",
+    status: "Scheduled",
+    requiredParts: [
+      { partId: "part-hbm3-stack", partName: "HBM3 High-Bandwidth Memory Substrate Module (24GB Stack)", partNumber: "NV-PART-HBM3-192G", qty: 1, unitCostUsd: 6500 }
+    ],
+    notes: "Maintenance window confirmed during off-peak inference workload."
+  },
+  {
+    id: "rep-002",
+    ticketNumber: "SRV-883102",
+    nodeId: "sentinel-cw-01",
+    clusterName: "CoreWeave US-East Data Center - Rack 14",
+    nodeType: "NVIDIA HGX B200 (8x B200 GPUs)",
+    serialNumber: "SN-CW-B200-884910",
+    defectReason: "MOSFET Power Regulator Phase 3 Voltage Ripple (>180mV)",
+    assignedTechnician: "Marcus Vance (Senior Hardware Tech)",
+    depotLocation: "Ashburn NV-Depot #4",
+    scheduledDate: "2026-08-01 09:30 UTC",
+    status: "In-Progress",
+    requiredParts: [
+      { partId: "part-vrm-phase", partName: "MOSFET Power Regulator Phase-3 VRM Module", partNumber: "NV-PART-VRM-12V-V03", qty: 2, unitCostUsd: 1250 }
+    ],
+    notes: "VRM phase swap underway. Hydrostatic and electrical safety checks pending."
+  },
+  {
+    id: "rep-003",
+    ticketNumber: "SRV-771920",
+    nodeId: "sentinel-meta-03",
+    clusterName: "Meta Llama-4 Supercluster - Node 102",
+    nodeType: "NVIDIA Grace Hopper GH200",
+    serialNumber: "SN-META-GH-991204",
+    defectReason: "Liquid cooling loop differential pressure drop (0.4 BAR)",
+    assignedTechnician: "Elena Rostova (Liquid Cooling Specialist)",
+    depotLocation: "Forest City Depot #1",
+    scheduledDate: "2026-07-28 11:00 UTC",
+    completionDate: "2026-07-28 15:45 UTC",
+    status: "Completed",
+    requiredParts: [
+      { partId: "part-qd-fitting", partName: "Quick-Disconnect Liquid Cooling Valve Fitting Assembly", partNumber: "NV-PART-COOL-QD-50", qty: 1, unitCostUsd: 850 }
+    ],
+    notes: "Replaced micro-channel cold plate fitting & flushed dielectric fluid. Post-test health index restored to 100%."
+  }
+];
+
+const INITIAL_DISPATCH_ORDERS: PartsDispatchOrder[] = [
+  {
+    id: "disp-101",
+    dispatchId: "DSP-33019",
+    nodeId: "sentinel-cw-01",
+    clusterName: "CoreWeave US-East Data Center - Rack 14",
+    serialNumber: "SN-CW-B200-884910",
+    partId: "part-b200-board",
+    partName: "NVIDIA HGX B200 8-GPU Baseboard Module",
+    partNumber: "NV-PART-B200-HGX-01",
+    quantityDispatched: 1,
+    dispatchDate: "2026-07-30 08:15 UTC",
+    status: "In-Transit",
+    carrier: "FedEx Priority Cold Chain / Secure Air",
+    trackingNumber: "TRK-NV-884910-X"
+  },
+  {
+    id: "disp-102",
+    dispatchId: "DSP-32884",
+    nodeId: "sentinel-meta-03",
+    clusterName: "Meta Llama-4 Supercluster - Node 102",
+    serialNumber: "SN-META-GH-991204",
+    partId: "part-gh200-coldplate",
+    partName: "GH200 Micro-Channel Liquid Cold Plate",
+    partNumber: "NV-PART-GH200-CP-02",
+    quantityDispatched: 2,
+    dispatchDate: "2026-07-27 10:00 UTC",
+    status: "Delivered",
+    carrier: "DHL Express Logistics",
+    trackingNumber: "TRK-NV-991204-M"
+  }
+];
+
+const INITIAL_PROCUREMENT_ORDERS: ProcurementReplenishmentOrder[] = [
+  {
+    id: "po-501",
+    poNumber: "PO-NV-2026-9041",
+    partId: "part-vrm-phase",
+    partName: "MOSFET Power Regulator Phase-3 VRM Module",
+    partNumber: "NV-PART-VRM-12V-V03",
+    quantityOrdered: 50,
+    unitCostUsd: 1250,
+    totalCostUsd: 62500,
+    supplier: "Monolithic Power Systems (MPS)",
+    orderDate: "2026-07-29",
+    estimatedDeliveryDate: "2026-08-05",
+    status: "PO Issued"
+  }
+];
+
 // Helper to replace **text** and `code` with styled React components
 function parseBold(text: string) {
   const parts = text.split(/\*\*([^*]+)\*\*/g);
@@ -498,7 +713,7 @@ function HoverModelTag({ name, description, isActive }: { name: string; descript
   );
 }
 
-function HoverModelMetricCard({ m }: { m: { modelName: string; mape: number; status: string } }) {
+function HoverModelMetricCard({ m }: { m: { modelName: string; mape: number; status: string }; key?: any }) {
   const [hovered, setHovered] = useState(false);
   const tooltips: Record<string, string> = {
     "Pattern-Recognition Model": "Deep neural sequence model (LSTM) that identifies complex adoption patterns, non-linear demand spikes, and multi-stage launch cycles.",
@@ -614,7 +829,7 @@ function AllocationsInfoPopover() {
   );
 }
 
-function LowConfidenceExplainabilityCard({ f }: { f: LowConfidenceFlag }) {
+function LowConfidenceExplainabilityCard({ f }: { f: LowConfidenceFlag; key?: any }) {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -861,6 +1076,766 @@ function SupplyChainGlossary() {
   );
 }
 
+// ==========================================
+// NVSENTINEL WORKFLOW HELPER COMPONENTS
+// ==========================================
+
+function RepairSchedulesView({
+  schedules,
+  setSchedules,
+  onSelectRepairForParts,
+  onSwitchToParts
+}: {
+  schedules: RepairSchedule[];
+  setSchedules: React.Dispatch<React.SetStateAction<RepairSchedule[]>>;
+  onSelectRepairForParts: (repairId: string) => void;
+  onSwitchToParts: () => void;
+}) {
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const filtered = schedules.filter(s => {
+    if (filterStatus === "all") return true;
+    return s.status.toLowerCase() === filterStatus.toLowerCase();
+  });
+
+  const handleStatusChange = (id: string, newStatus: RepairSchedule["status"]) => {
+    setSchedules(prev => prev.map(s => {
+      if (s.id === id) {
+        return {
+          ...s,
+          status: newStatus,
+          completionDate: newStatus === "Completed" ? new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC" : s.completionDate
+        };
+      }
+      return s;
+    }));
+  };
+
+  return (
+    <div className="bg-[#090d16] border border-nvidia-border/80 rounded-lg p-4 flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-nvidia-border/60 pb-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-sky-400" />
+            <h3 className="font-bold text-white text-sm">Active & Completed Field Repair Schedules</h3>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Real-time status tracking of proactive repair jobs, assigned enterprise field technicians, and required hardware parts.
+          </p>
+        </div>
+
+        {/* STATUS FILTER PILLS */}
+        <div className="flex items-center gap-1.5 bg-[#05080e] p-1 rounded border border-nvidia-border/60 text-xs">
+          {["all", "Scheduled", "In-Progress", "Completed"].map(st => (
+            <button
+              key={st}
+              onClick={() => setFilterStatus(st)}
+              className={`px-2.5 py-1 rounded text-[10px] font-mono capitalize transition-all cursor-pointer ${
+                filterStatus === st
+                  ? "bg-sky-500 text-white font-bold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {st}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* REPAIR SCHEDULES TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
+              <th className="p-2.5">Ticket # & Node</th>
+              <th className="p-2.5">Defect / Reason</th>
+              <th className="p-2.5">Assigned Tech & Depot</th>
+              <th className="p-2.5">Schedule / Date</th>
+              <th className="p-2.5">Required Parts</th>
+              <th className="p-2.5">Status</th>
+              <th className="p-2.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-nvidia-border/30">
+            {filtered.map(r => (
+              <tr key={r.id} className="hover:bg-slate-800/20 transition-colors">
+                <td className="p-2.5 align-top">
+                  <span className="font-mono text-nvidia-green font-bold block">{r.ticketNumber}</span>
+                  <span className="font-bold text-white text-[11px] block">{r.clusterName}</span>
+                  <span className="text-[10px] text-slate-400 font-mono block">S/N: {r.serialNumber}</span>
+                </td>
+
+                <td className="p-2.5 align-top max-w-[200px]">
+                  <p className="text-[11px] text-slate-300 font-sans line-clamp-2">{r.defectReason}</p>
+                </td>
+
+                <td className="p-2.5 align-top">
+                  <span className="text-[11px] text-slate-200 block">{r.assignedTechnician}</span>
+                  <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-3 w-3 text-sky-400 shrink-0" />
+                    {r.depotLocation}
+                  </span>
+                </td>
+
+                <td className="p-2.5 align-top whitespace-nowrap">
+                  <span className="text-[11px] font-mono text-slate-300 block">{r.scheduledDate}</span>
+                  {r.completionDate && (
+                    <span className="text-[10px] font-mono text-emerald-400 block mt-0.5">
+                      Done: {r.completionDate}
+                    </span>
+                  )}
+                </td>
+
+                <td className="p-2.5 align-top">
+                  {r.requiredParts.length === 0 ? (
+                    <span className="text-[10px] text-slate-500 italic font-mono block">No parts attached</span>
+                  ) : (
+                    <div className="space-y-1">
+                      {r.requiredParts.map((pt, pidx) => (
+                        <div key={pidx} className="bg-[#05080e] border border-nvidia-border/40 p-1.5 rounded text-[10px]">
+                          <span className="text-white font-bold block">{pt.partName}</span>
+                          <span className="text-slate-400 font-mono block">
+                            Qty: <strong className="text-nvidia-green">{pt.qty}</strong> | ${pt.unitCostUsd.toLocaleString()} ea
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+
+                <td className="p-2.5 align-top whitespace-nowrap">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border inline-block ${
+                    r.status === "Scheduled" ? "bg-sky-500/10 text-sky-400 border-sky-500/30" :
+                    r.status === "In-Progress" ? "bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse" :
+                    r.status === "Completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                    "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                  }`}>
+                    {r.status}
+                  </span>
+                </td>
+
+                <td className="p-2.5 align-top text-right whitespace-nowrap space-y-1">
+                  <button
+                    onClick={() => {
+                      onSelectRepairForParts(r.id);
+                      onSwitchToParts();
+                    }}
+                    className="w-full text-left px-2 py-1 rounded bg-nvidia-green/10 hover:bg-nvidia-green/20 border border-nvidia-green/40 text-nvidia-green text-[10px] font-mono font-bold flex items-center justify-between gap-1 transition-all cursor-pointer"
+                  >
+                    <span>+ Add Parts</span>
+                    <Package className="h-3 w-3" />
+                  </button>
+
+                  {r.status !== "Completed" && (
+                    <button
+                      onClick={() => handleStatusChange(r.id, "Completed")}
+                      className="w-full text-left px-2 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold flex items-center justify-between gap-1 transition-all cursor-pointer"
+                    >
+                      <span>Mark Complete</span>
+                      <CheckCircle2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PartsInventoryView({
+  spareParts,
+  setSpareParts,
+  repairSchedules,
+  setRepairSchedules,
+  dispatchOrders,
+  setDispatchOrders,
+  selectedRepairId,
+  setSelectedRepairId,
+  dispatchTargetNodeId,
+  setDispatchTargetNodeId,
+  onOpenPoModal,
+  setTerminalFeed
+}: {
+  spareParts: SparePartItem[];
+  setSpareParts: React.Dispatch<React.SetStateAction<SparePartItem[]>>;
+  repairSchedules: RepairSchedule[];
+  setRepairSchedules: React.Dispatch<React.SetStateAction<RepairSchedule[]>>;
+  dispatchOrders: PartsDispatchOrder[];
+  setDispatchOrders: React.Dispatch<React.SetStateAction<PartsDispatchOrder[]>>;
+  selectedRepairId: string | null;
+  setSelectedRepairId: (id: string | null) => void;
+  dispatchTargetNodeId: string | null;
+  setDispatchTargetNodeId: (id: string | null) => void;
+  onOpenPoModal: (part: SparePartItem, qty: number) => void;
+  setTerminalFeed: React.Dispatch<React.SetStateAction<string[]>>;
+}) {
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const selectedRepair = repairSchedules.find(r => r.id === selectedRepairId);
+  const dispatchNode = NV_SENTINEL_NODES.find(n => n.id === dispatchTargetNodeId);
+
+  // Check low stock parts
+  const lowStockParts = spareParts.filter(p => p.inStock < p.safetyStock);
+
+  const filteredParts = spareParts.filter(p => {
+    if (categoryFilter !== "all" && p.category !== categoryFilter) return false;
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      return p.name.toLowerCase().includes(q) || p.partNumber.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const categories = ["all", "GPU Accelerator Module", "Liquid Cooling & Fittings", "VRM Power Phase", "NVLink Interconnect", "Memory Substrate"];
+
+  // Handle attaching part to selected repair schedule
+  const handleAttachPartToRepair = (part: SparePartItem) => {
+    if (!selectedRepair) return;
+
+    if (part.inStock <= 0) {
+      alert(`Out of stock! Cannot attach ${part.name}. Please initiate a procurement order.`);
+      return;
+    }
+
+    // Deduct stock
+    setSpareParts(prev => prev.map(p => p.id === part.id ? { ...p, inStock: p.inStock - 1 } : p));
+
+    // Update repair schedule
+    setRepairSchedules(prev => prev.map(r => {
+      if (r.id === selectedRepair.id) {
+        const existingIdx = r.requiredParts.findIndex(p => p.partId === part.id);
+        let updatedParts = [...r.requiredParts];
+        if (existingIdx >= 0) {
+          updatedParts[existingIdx] = { ...updatedParts[existingIdx], qty: updatedParts[existingIdx].qty + 1 };
+        } else {
+          updatedParts.push({
+            partId: part.id,
+            partName: part.name,
+            partNumber: part.partNumber,
+            qty: 1,
+            unitCostUsd: part.unitCostUsd
+          });
+        }
+        return { ...r, requiredParts: updatedParts };
+      }
+      return r;
+    }));
+
+    const newStock = part.inStock - 1;
+    const isBelowSafety = newStock < part.safetyStock;
+
+    setNotification(
+      `ATTACHED PART: 1x ${part.name} added to Repair Ticket #${selectedRepair.ticketNumber}. Remaining inventory: ${newStock} units.` +
+      (isBelowSafety ? ` ⚠️ ALERT: Stock dipped below safety threshold (${part.safetyStock} units)!` : "")
+    );
+
+    setTerminalFeed(prev => [
+      ...prev,
+      `[Parts Inventory] ATTACHED: 1x ${part.partNumber} allocated to ticket #${selectedRepair.ticketNumber}. New stock level: ${newStock}.`
+    ]);
+
+    if (isBelowSafety) {
+      onOpenPoModal(part, Math.max(20, part.safetyStock * 2 - newStock));
+    }
+  };
+
+  // Handle direct dispatch of part
+  const handleDispatchPart = (part: SparePartItem) => {
+    if (!dispatchNode) return;
+
+    if (part.inStock <= 0) {
+      alert(`Out of stock! Cannot dispatch ${part.name}.`);
+      return;
+    }
+
+    // Deduct stock
+    setSpareParts(prev => prev.map(p => p.id === part.id ? { ...p, inStock: p.inStock - 1 } : p));
+
+    const newDispatchId = `DSP-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newOrder: PartsDispatchOrder = {
+      id: `disp-${Date.now()}`,
+      dispatchId: newDispatchId,
+      nodeId: dispatchNode.id,
+      clusterName: dispatchNode.clusterName,
+      serialNumber: dispatchNode.serialNumber,
+      partId: part.id,
+      partName: part.name,
+      partNumber: part.partNumber,
+      quantityDispatched: 1,
+      dispatchDate: new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC",
+      status: "Dispatched",
+      carrier: "FedEx Air Express / Priority Cold-Chain",
+      trackingNumber: `TRK-NV-${Math.floor(100000 + Math.random() * 900000)}`
+    };
+
+    setDispatchOrders(prev => [newOrder, ...prev]);
+
+    const newStock = part.inStock - 1;
+    const isBelowSafety = newStock < part.safetyStock;
+
+    setNotification(
+      `DISPATCH GENERATED (#${newDispatchId}): 1x ${part.name} dispatched to ${dispatchNode.clusterName}. Remaining inventory: ${newStock} units.` +
+      (isBelowSafety ? ` ⚠️ SAFETY STOCK BREACH DETECTED!` : "")
+    );
+
+    setTerminalFeed(prev => [
+      ...prev,
+      `[Parts Dispatch] AUTHORIZED: Dispatch order ${newDispatchId} created for ${dispatchNode.clusterName} (${part.partNumber}).`
+    ]);
+
+    setDispatchTargetNodeId(null);
+
+    if (isBelowSafety) {
+      onOpenPoModal(part, Math.max(20, part.safetyStock * 2 - newStock));
+    }
+  };
+
+  return (
+    <div className="bg-[#090d16] border border-nvidia-border/80 rounded-lg p-4 flex flex-col gap-4">
+      {/* HEADER & CONTEXT BANNERS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-nvidia-border/60 pb-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-nvidia-green" />
+            <h3 className="font-bold text-white text-sm">Spare Parts Inventory & Replenishment Planning</h3>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Enterprise hardware spares management. Real-time safety stock threshold monitoring and automatic procurement replenishment trigger.
+          </p>
+        </div>
+
+        {lowStockParts.length > 0 && (
+          <div className="bg-rose-500/10 border border-rose-500/30 p-2 rounded flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+            <div className="text-[11px]">
+              <span className="font-mono text-rose-300 font-bold block">{lowStockParts.length} Parts Below Safety Stock</span>
+              <span className="text-[10px] text-slate-400">Automatic PO planning enabled</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ACTIVE REPAIR ORDER CONTEXT BANNER */}
+      {selectedRepair && (
+        <div className="bg-sky-500/10 border border-sky-500/40 p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-start gap-2">
+            <Wrench className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-mono text-sky-300 font-bold uppercase block">
+                ATTACHING PARTS FOR REPAIR TICKET #{selectedRepair.ticketNumber}
+              </span>
+              <p className="text-xs text-white font-semibold">{selectedRepair.clusterName} ({selectedRepair.nodeType})</p>
+              <p className="text-[10px] text-slate-300 font-sans mt-0.5">Defect: {selectedRepair.defectReason}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedRepairId(null)}
+            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono cursor-pointer"
+          >
+            Cancel Selection
+          </button>
+        </div>
+      )}
+
+      {/* DISPATCH TARGET CONTEXT BANNER */}
+      {dispatchNode && (
+        <div className="bg-nvidia-green/10 border border-nvidia-green/40 p-3 rounded flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-start gap-2">
+            <Truck className="h-4 w-4 text-nvidia-green shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[10px] font-mono text-nvidia-green font-bold uppercase block">
+                DISPATCH REPLACEMENT HARDWARE MODE
+              </span>
+              <p className="text-xs text-white font-semibold">Destination: {dispatchNode.clusterName}</p>
+              <p className="text-[10px] text-slate-300 font-sans mt-0.5">Equipment Type: {dispatchNode.nodeType} (S/N: {dispatchNode.serialNumber})</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setDispatchTargetNodeId(null)}
+            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono cursor-pointer"
+          >
+            Cancel Dispatch Mode
+          </button>
+        </div>
+      )}
+
+      {/* NOTIFICATION TOAST */}
+      {notification && (
+        <div className="bg-nvidia-green/10 border border-nvidia-green/40 p-2.5 rounded text-xs text-nvidia-green flex items-center justify-between animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 font-mono text-[11px]">
+            <CheckCircle2 className="h-4 w-4 text-nvidia-green shrink-0" />
+            <span>{notification}</span>
+          </div>
+          <button onClick={() => setNotification(null)} className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* SEARCH & CATEGORY FILTERS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+          <input
+            type="text"
+            placeholder="Search part # or hardware name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#05080e] border border-nvidia-border/60 rounded pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-nvidia-green font-mono"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-2.5 py-1 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                categoryFilter === cat
+                  ? "bg-nvidia-green text-black font-bold"
+                  : "bg-[#05080e] border border-nvidia-border/60 text-slate-400 hover:text-white"
+              }`}
+            >
+              {cat === "all" ? "All Categories" : cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* PARTS TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
+              <th className="p-2.5">Part # & Name</th>
+              <th className="p-2.5">Category & Hardware Compatibility</th>
+              <th className="p-2.5">In-Stock / Safety Level</th>
+              <th className="p-2.5">Unit Cost & Lead Time</th>
+              <th className="p-2.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-nvidia-border/30">
+            {filteredParts.map(p => {
+              const isBelowSafety = p.inStock < p.safetyStock;
+              return (
+                <tr key={p.id} className={`hover:bg-slate-800/20 transition-colors ${isBelowSafety ? "bg-rose-500/5" : ""}`}>
+                  <td className="p-2.5 align-top">
+                    <span className="font-mono text-nvidia-green font-bold block">{p.partNumber}</span>
+                    <strong className="text-xs text-white font-semibold block">{p.name}</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block mt-0.5">Depot: {p.depotLocation}</span>
+                  </td>
+
+                  <td className="p-2.5 align-top">
+                    <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 inline-block mb-1">
+                      {p.category}
+                    </span>
+                    <p className="text-[10px] text-slate-300 font-sans">
+                      {p.compatibleHardware.join(", ")}
+                    </p>
+                  </td>
+
+                  <td className="p-2.5 align-top">
+                    <div className="flex items-center gap-2">
+                      <strong className={`text-sm font-bold font-mono ${isBelowSafety ? "text-rose-400" : "text-white"}`}>
+                        {p.inStock} units
+                      </strong>
+                      <span className="text-[10px] font-mono text-slate-400">(Min Safety: {p.safetyStock})</span>
+                    </div>
+
+                    {isBelowSafety ? (
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 inline-block mt-1 animate-pulse">
+                        ⚠️ SAFETY STOCK BREACH
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-mono text-emerald-400 inline-block mt-1">
+                        ✓ Safety Stock Nominal
+                      </span>
+                    )}
+
+                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5 max-w-[120px]">
+                      <div
+                        className={`h-full ${isBelowSafety ? "bg-rose-500" : "bg-nvidia-green"}`}
+                        style={{ width: `${Math.min(100, (p.inStock / (p.safetyStock * 2)) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </td>
+
+                  <td className="p-2.5 align-top font-mono text-[11px]">
+                    <span className="text-white font-bold block">${p.unitCostUsd.toLocaleString()} USD</span>
+                    <span className="text-slate-400 text-[10px] block mt-0.5">Lead Time: {p.leadTimeDays} days</span>
+                    <span className="text-slate-500 text-[9px] block">Supplier: {p.supplier}</span>
+                  </td>
+
+                  <td className="p-2.5 align-top text-right space-y-1.5 whitespace-nowrap">
+                    {selectedRepair && (
+                      <button
+                        onClick={() => handleAttachPartToRepair(p)}
+                        className="w-full text-left px-2.5 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400 text-sky-300 text-[10px] font-mono font-bold flex items-center justify-between gap-1 transition-all cursor-pointer"
+                      >
+                        <span>Attach to Ticket #{selectedRepair.ticketNumber}</span>
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+
+                    {dispatchNode && (
+                      <button
+                        onClick={() => handleDispatchPart(p)}
+                        className="w-full text-left px-2.5 py-1 rounded bg-nvidia-green/20 hover:bg-nvidia-green/30 border border-nvidia-green text-nvidia-green text-[10px] font-mono font-bold flex items-center justify-between gap-1 transition-all cursor-pointer"
+                      >
+                        <span>Confirm & Dispatch Part</span>
+                        <Truck className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onOpenPoModal(p, Math.max(20, p.safetyStock * 2 - p.inStock))}
+                      className={`w-full text-left px-2.5 py-1 rounded border text-[10px] font-mono font-bold flex items-center justify-between gap-1 transition-all cursor-pointer ${
+                        isBelowSafety
+                          ? "bg-rose-500/20 hover:bg-rose-500/30 border-rose-500 text-rose-300 animate-bounce"
+                          : "bg-[#05080e] hover:bg-slate-800 border-nvidia-border text-slate-300"
+                      }`}
+                    >
+                      <span>Plan Replenishment PO</span>
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function DispatchAndProcurementView({
+  dispatchOrders,
+  procurementOrders
+}: {
+  dispatchOrders: PartsDispatchOrder[];
+  procurementOrders: ProcurementReplenishmentOrder[];
+}) {
+  const [activeSubView, setActiveSubView] = useState<"dispatches" | "procurement">("dispatches");
+
+  return (
+    <div className="bg-[#090d16] border border-nvidia-border/80 rounded-lg p-4 flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-nvidia-border/60 pb-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-emerald-400" />
+            <h3 className="font-bold text-white text-sm">Parts Dispatch Orders & Procurement Replenishment POs</h3>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Logistics fulfillment audit trail for dispatched replacement hardware and issued supplier purchase orders.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 bg-[#05080e] p-1 rounded border border-nvidia-border/60 text-xs">
+          <button
+            onClick={() => setActiveSubView("dispatches")}
+            className={`px-3 py-1 rounded text-[10px] font-mono transition-all cursor-pointer ${
+              activeSubView === "dispatches" ? "bg-emerald-500 text-black font-bold" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Dispatch Orders ({dispatchOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveSubView("procurement")}
+            className={`px-3 py-1 rounded text-[10px] font-mono transition-all cursor-pointer ${
+              activeSubView === "procurement" ? "bg-emerald-500 text-black font-bold" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Procurement POs ({procurementOrders.length})
+          </button>
+        </div>
+      </div>
+
+      {activeSubView === "dispatches" ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
+                <th className="p-2.5">Dispatch ID</th>
+                <th className="p-2.5">Target Data Center / Node</th>
+                <th className="p-2.5">Dispatched Hardware</th>
+                <th className="p-2.5">Carrier & Tracking</th>
+                <th className="p-2.5">Dispatch Date</th>
+                <th className="p-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-nvidia-border/30">
+              {dispatchOrders.map(d => (
+                <tr key={d.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-2.5 font-mono text-nvidia-green font-bold">#{d.dispatchId}</td>
+                  <td className="p-2.5">
+                    <strong className="text-white text-xs block">{d.clusterName}</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block">S/N: {d.serialNumber}</span>
+                  </td>
+                  <td className="p-2.5">
+                    <span className="text-xs text-slate-200 block font-semibold">{d.partName}</span>
+                    <span className="text-[10px] text-slate-400 font-mono block">{d.partNumber} (Qty: {d.quantityDispatched})</span>
+                  </td>
+                  <td className="p-2.5 font-mono text-[11px]">
+                    <span className="text-slate-300 block">{d.carrier}</span>
+                    <span className="text-emerald-400 text-[10px] block font-bold">{d.trackingNumber}</span>
+                  </td>
+                  <td className="p-2.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">{d.dispatchDate}</td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      {d.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
+                <th className="p-2.5">PO Number</th>
+                <th className="p-2.5">Part Name & Supplier</th>
+                <th className="p-2.5">Quantity & Unit Cost</th>
+                <th className="p-2.5">Total PO Amount</th>
+                <th className="p-2.5">Order / Est. Delivery</th>
+                <th className="p-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-nvidia-border/30">
+              {procurementOrders.map(po => (
+                <tr key={po.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-2.5 font-mono text-sky-400 font-bold">{po.poNumber}</td>
+                  <td className="p-2.5">
+                    <strong className="text-white text-xs block">{po.partName}</strong>
+                    <span className="text-[10px] text-slate-400 font-mono block">Supplier: {po.supplier}</span>
+                  </td>
+                  <td className="p-2.5 font-mono text-[11px]">
+                    <span className="text-slate-200 block font-bold">{po.quantityOrdered} units</span>
+                    <span className="text-slate-400 text-[10px] block">${po.unitCostUsd.toLocaleString()} / unit</span>
+                  </td>
+                  <td className="p-2.5 font-mono text-emerald-400 font-bold text-xs">
+                    ${po.totalCostUsd.toLocaleString()} USD
+                  </td>
+                  <td className="p-2.5 font-mono text-[10px] text-slate-400">
+                    <span className="block text-slate-300">Issued: {po.orderDate}</span>
+                    <span className="block text-emerald-400 font-semibold">Est: {po.estimatedDeliveryDate}</span>
+                  </td>
+                  <td className="p-2.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                      {po.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PoCreationModal({
+  part,
+  qty,
+  onClose,
+  onSubmitPo
+}: {
+  part: SparePartItem;
+  qty: number;
+  onClose: () => void;
+  onSubmitPo: (part: SparePartItem, orderQty: number) => void;
+}) {
+  const [orderQty, setOrderQty] = useState<number>(qty);
+
+  const totalCost = orderQty * part.unitCostUsd;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#090d16] border border-nvidia-green/50 rounded-lg max-w-lg w-full p-5 shadow-2xl flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-nvidia-border/60 pb-3">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-nvidia-green" />
+            <div>
+              <h3 className="font-bold text-white text-base">Issue Procurement Replenishment PO</h3>
+              <span className="text-[10px] font-mono text-slate-400">Safety Stock Threshold Trigger Enabled</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white cursor-pointer">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="bg-[#05080e] border border-nvidia-border/60 p-3 rounded space-y-2 text-xs">
+          <div className="flex justify-between">
+            <span className="text-slate-400 font-mono">Hardware Item:</span>
+            <strong className="text-white font-semibold">{part.name}</strong>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400 font-mono">Part Number:</span>
+            <span className="font-mono text-nvidia-green">{part.partNumber}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400 font-mono">Current Stock / Safety Threshold:</span>
+            <span className="font-mono text-rose-400 font-bold">{part.inStock} units / Min {part.safetyStock} units</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400 font-mono">Supplier & Lead Time:</span>
+            <span className="text-slate-200">{part.supplier} ({part.leadTimeDays} days)</span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-mono text-slate-300 block font-semibold">
+            Order Replenishment Quantity (Units):
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={orderQty}
+            onChange={(e) => setOrderQty(parseInt(e.target.value) || 1)}
+            className="w-full bg-[#05080e] border border-nvidia-border/80 rounded p-2 text-sm text-white font-mono focus:outline-none focus:border-nvidia-green"
+          />
+          <p className="text-[10px] text-slate-400 font-mono">
+            Recommended order quantity to restore safety buffer to 150%+ level.
+          </p>
+        </div>
+
+        <div className="bg-nvidia-green/10 border border-nvidia-green/30 p-3 rounded flex items-center justify-between text-xs font-mono">
+          <span className="text-slate-300">Total Purchase Order Value:</span>
+          <strong className="text-base text-nvidia-green font-bold">${totalCost.toLocaleString()} USD</strong>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-nvidia-border/60">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onSubmitPo(part, orderQty);
+            }}
+            className="px-4 py-2 rounded bg-nvidia-green hover:bg-nvidia-green/90 text-black font-mono font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-nvidia-green/20"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Confirm & Issue Purchase Order</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("orchestrator");
   const [controlTowerSubTab, setControlTowerSubTab] = useState<"forecasts" | "rma">("rma");
@@ -878,6 +1853,51 @@ export default function App() {
   const [sentinelSelectedNodeId, setSentinelSelectedNodeId] = useState<string>("sentinel-cw-01");
   const [sentinelProactiveActionStatus, setSentinelProactiveActionStatus] = useState<Record<string, "idle" | "dispatched" | "scheduled" | "alerted">>({});
   const [sentinelActionNotification, setSentinelActionNotification] = useState<string | null>(null);
+
+  // NVSentinel Sub-Tabs & Inventory Workflow State
+  const [sentinelSubTab, setSentinelSubTab] = useState<"telemetry" | "repair-schedules" | "parts-inventory" | "dispatch-procurement">("telemetry");
+  const [repairSchedules, setRepairSchedules] = useState<RepairSchedule[]>(INITIAL_REPAIR_SCHEDULES);
+  const [spareParts, setSpareParts] = useState<SparePartItem[]>(INITIAL_SPARE_PARTS);
+  const [dispatchOrders, setDispatchOrders] = useState<PartsDispatchOrder[]>(INITIAL_DISPATCH_ORDERS);
+  const [procurementOrders, setProcurementOrders] = useState<ProcurementReplenishmentOrder[]>(INITIAL_PROCUREMENT_ORDERS);
+  
+  // Selected repair schedule for parts attachment / recommendation focus
+  const [selectedRepairId, setSelectedRepairId] = useState<string | null>("rep-002");
+  const [partsSearchQuery, setPartsSearchQuery] = useState<string>("");
+  const [dispatchTargetNodeId, setDispatchTargetNodeId] = useState<string | null>(null);
+
+  // PO Creation Modal State (when stock dips below safety threshold)
+  const [poModalPart, setPoModalPart] = useState<SparePartItem | null>(null);
+  const [poModalQty, setPoModalQty] = useState<number>(20);
+
+  const handleConfirmPo = (part: SparePartItem, orderQty: number) => {
+    const poNum = `PO-NV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newPo: ProcurementReplenishmentOrder = {
+      id: `po-${Date.now()}`,
+      poNumber: poNum,
+      partId: part.id,
+      partName: part.name,
+      partNumber: part.partNumber,
+      supplier: part.supplier,
+      quantityOrdered: orderQty,
+      unitCostUsd: part.unitCostUsd,
+      totalCostUsd: orderQty * part.unitCostUsd,
+      orderDate: new Date().toISOString().slice(0, 10),
+      estimatedDeliveryDate: new Date(Date.now() + 86400000 * part.leadTimeDays).toISOString().slice(0, 10),
+      status: "Submitted to Supplier"
+    };
+
+    setProcurementOrders(prev => [newPo, ...prev]);
+    setPoModalPart(null);
+    setSentinelSubTab("dispatch-procurement");
+    setSentinelActionNotification(
+      `PURCHASE ORDER CONFIRMED: PO #${poNum} issued to ${part.supplier} for ${orderQty} units of ${part.name}.`
+    );
+    setTerminalFeed(prev => [
+      ...prev,
+      `[Procurement Engine] PO SUBMITTED: ${poNum} generated for ${orderQty}x ${part.partNumber} ($${(orderQty * part.unitCostUsd).toLocaleString()} USD).`
+    ]);
+  };
 
   // Current system messages showing streaming AI thoughts
   const [terminalFeed, setTerminalFeed] = useState<string[]>([]);
@@ -2456,9 +3476,76 @@ export default function App() {
                       }
                     />
                   </div>
+
+                  {/* SUB-TAB NAVIGATION PILLS */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-nvidia-border/60 pt-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => setSentinelSubTab("telemetry")}
+                        className={`px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sentinelSubTab === "telemetry"
+                            ? "bg-nvidia-green text-black font-bold shadow-md shadow-nvidia-green/20"
+                            : "bg-[#090d16] border border-nvidia-border/70 text-slate-300 hover:text-white hover:border-nvidia-green/50"
+                        }`}
+                      >
+                        <Radio className="h-3.5 w-3.5" />
+                        <span>Telemetry & Predictive Health</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSentinelSubTab("repair-schedules")}
+                        className={`px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sentinelSubTab === "repair-schedules"
+                            ? "bg-nvidia-green text-black font-bold shadow-md shadow-nvidia-green/20"
+                            : "bg-[#090d16] border border-nvidia-border/70 text-slate-300 hover:text-white hover:border-nvidia-green/50"
+                        }`}
+                      >
+                        <Wrench className="h-3.5 w-3.5" />
+                        <span>Active & Completed Repair Schedules</span>
+                        <span className="ml-1 bg-black/30 px-1.5 py-0.2 rounded text-[10px]">
+                          {repairSchedules.filter(r => r.status !== "Completed").length} Active
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setSentinelSubTab("parts-inventory")}
+                        className={`px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sentinelSubTab === "parts-inventory"
+                            ? "bg-nvidia-green text-black font-bold shadow-md shadow-nvidia-green/20"
+                            : "bg-[#090d16] border border-nvidia-border/70 text-slate-300 hover:text-white hover:border-nvidia-green/50"
+                        }`}
+                      >
+                        <Package className="h-3.5 w-3.5" />
+                        <span>Spares & Parts Inventory</span>
+                        {spareParts.some(p => p.inStock < p.safetyStock) && (
+                          <span className="ml-1 bg-rose-500 text-white px-1.5 py-0.2 rounded text-[9px] font-bold animate-pulse">
+                            {spareParts.filter(p => p.inStock < p.safetyStock).length} Low Stock
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => setSentinelSubTab("dispatch-procurement")}
+                        className={`px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sentinelSubTab === "dispatch-procurement"
+                            ? "bg-nvidia-green text-black font-bold shadow-md shadow-nvidia-green/20"
+                            : "bg-[#090d16] border border-nvidia-border/70 text-slate-300 hover:text-white hover:border-nvidia-green/50"
+                        }`}
+                      >
+                        <Truck className="h-3.5 w-3.5" />
+                        <span>Dispatches & Procurement POs</span>
+                        <span className="ml-1 bg-black/30 px-1.5 py-0.2 rounded text-[10px]">
+                          {dispatchOrders.length + procurementOrders.length}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* FLEET SELECTOR & LIVE NODE DETAIL */}
+                {/* SUB-TAB 1: TELEMETRY & LIVE HEALTH */}
+                {sentinelSubTab === "telemetry" && (
+                  <>
+                    {/* FLEET SELECTOR & LIVE NODE DETAIL */}
                 <div className="bg-nvidia-card border border-nvidia-border rounded-lg p-4 flex flex-col gap-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-nvidia-border/60 pb-3">
                     <div>
@@ -2684,12 +3771,14 @@ export default function App() {
                             <button
                               onClick={() => {
                                 setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "dispatched" }));
+                                setDispatchTargetNodeId(node.id);
+                                setSentinelSubTab("parts-inventory");
                                 setSentinelActionNotification(
-                                  `PROACTIVE WARRANTY DISPATCH INITIATED: Replacement ${node.nodeType} board shipped via priority logistics to ${node.clusterName}. Claim ID #NVS-${Math.floor(100000 + Math.random() * 900000)} under 36M Warranty.`
+                                  `DISPATCH MODE ACTIVATED: Select replacement board/part in inventory to confirm priority dispatch for ${node.clusterName}.`
                                 );
                                 setTerminalFeed(prev => [
                                   ...prev,
-                                  `[NVSentinel] PROACTIVE DISPATCH: Priority warranty shipment authorized for ${node.clusterName} (S/N: ${node.serialNumber}).`
+                                  `[NVSentinel] PROACTIVE DISPATCH: Opened Parts Catalog to authorize dispatch for ${node.clusterName} (S/N: ${node.serialNumber}).`
                                 ]);
                               }}
                               className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
@@ -2700,24 +3789,42 @@ export default function App() {
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-[9px] font-mono text-nvidia-green font-bold uppercase">Option A: Warranty Dispatch</span>
-                                <CheckCircle2 className="h-3.5 w-3.5 text-nvidia-green" />
+                                <Truck className="h-3.5 w-3.5 text-nvidia-green" />
                               </div>
                               <strong className="text-xs font-bold text-white">Dispatch Replacement Board</strong>
                               <span className="text-[10px] text-slate-400 leading-normal">
-                                Ships replacement under active 36M warranty prior to failure.
+                                Opens parts catalog to select available hardware and deducts stock upon dispatch.
                               </span>
                             </button>
 
                             {/* ACTION 2: INITIATE REPAIR REQUEST */}
                             <button
                               onClick={() => {
+                                const newTicketNum = `SRV-${Math.floor(100000 + Math.random() * 900000)}`;
+                                const newSchedule: RepairSchedule = {
+                                  id: `rep-${Date.now()}`,
+                                  ticketNumber: newTicketNum,
+                                  nodeId: node.id,
+                                  clusterName: node.clusterName,
+                                  nodeType: node.nodeType,
+                                  serialNumber: node.serialNumber,
+                                  defectReason: node.imminentFailureReason,
+                                  assignedTechnician: "NVIDIA Field Eng (Auto-Assigned)",
+                                  depotLocation: node.dataCenterLocation.includes("NC") ? "Forest City Depot #1" : "Ashburn NV-Depot #4",
+                                  scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10) + " 10:00 UTC",
+                                  status: "Scheduled",
+                                  requiredParts: [],
+                                  notes: `Initiated via NVSentinel proactive telemetry alert for ${node.serialNumber}.`
+                                };
+                                setRepairSchedules(prev => [newSchedule, ...prev]);
+                                setSelectedRepairId(newSchedule.id);
                                 setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "scheduled" }));
                                 setSentinelActionNotification(
-                                  `PROACTIVE REPAIR INITIATED: Field service ticket #SRV-${Math.floor(100000 + Math.random() * 900000)} scheduled for maintenance window at ${node.clusterName}.`
+                                  `PROACTIVE REPAIR CREATED: Ticket #${newTicketNum} generated. View repair schedules table below.`
                                 );
                                 setTerminalFeed(prev => [
                                   ...prev,
-                                  `[NVSentinel] PROACTIVE REPAIR: Certified field technician scheduled for off-peak maintenance at ${node.clusterName}.`
+                                  `[NVSentinel] REPAIR TICKET CREATED: Ticket #${newTicketNum} scheduled for ${node.clusterName}.`
                                 ]);
                               }}
                               className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
@@ -2732,7 +3839,7 @@ export default function App() {
                               </div>
                               <strong className="text-xs font-bold text-white">Initiate Proactive Repair</strong>
                               <span className="text-[10px] text-slate-400 leading-normal">
-                                Schedules field service repair window before complete breakdown.
+                                Generates a field repair ticket and adds it to the repair schedule table below.
                               </span>
                             </button>
 
@@ -2785,6 +3892,52 @@ export default function App() {
                     );
                   })()}
                 </div>
+
+                {/* SHOW ACTIVE & COMPLETED REPAIR SCHEDULES TABLE RIGHT BELOW TELEMETRY */}
+                <RepairSchedulesView
+                  schedules={repairSchedules}
+                  setSchedules={setRepairSchedules}
+                  onSelectRepairForParts={(id) => setSelectedRepairId(id)}
+                  onSwitchToParts={() => setSentinelSubTab("parts-inventory")}
+                />
+              </>
+            )}
+
+            {/* SUB-TAB 2: REPAIR SCHEDULES FULL TAB */}
+            {sentinelSubTab === "repair-schedules" && (
+              <RepairSchedulesView
+                schedules={repairSchedules}
+                setSchedules={setRepairSchedules}
+                onSelectRepairForParts={(id) => setSelectedRepairId(id)}
+                onSwitchToParts={() => setSentinelSubTab("parts-inventory")}
+              />
+            )}
+
+            {/* SUB-TAB 3: PARTS INVENTORY FULL TAB */}
+            {sentinelSubTab === "parts-inventory" && (
+              <PartsInventoryView
+                spareParts={spareParts}
+                setSpareParts={setSpareParts}
+                repairSchedules={repairSchedules}
+                setRepairSchedules={setRepairSchedules}
+                dispatchOrders={dispatchOrders}
+                setDispatchOrders={setDispatchOrders}
+                selectedRepairId={selectedRepairId}
+                setSelectedRepairId={setSelectedRepairId}
+                dispatchTargetNodeId={dispatchTargetNodeId}
+                setDispatchTargetNodeId={setDispatchTargetNodeId}
+                onOpenPoModal={(p, q) => { setPoModalPart(p); setPoModalQty(q); }}
+                setTerminalFeed={setTerminalFeed}
+              />
+            )}
+
+            {/* SUB-TAB 4: DISPATCHES & PROCUREMENT POs FULL TAB */}
+            {sentinelSubTab === "dispatch-procurement" && (
+              <DispatchAndProcurementView
+                dispatchOrders={dispatchOrders}
+                procurementOrders={procurementOrders}
+              />
+            )}
               </motion.div>
             )}
 
@@ -3469,6 +4622,14 @@ export default function App() {
 
 
 
+        {poModalPart && (
+          <PoCreationModal
+            part={poModalPart}
+            qty={poModalQty}
+            onClose={() => setPoModalPart(null)}
+            onSubmitPo={handleConfirmPo}
+          />
+        )}
       </main>
 
       {/* FOOTER SECTION */}
