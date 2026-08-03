@@ -3904,7 +3904,7 @@ export default function App() {
                                 setSelectedRepairId(newSchedule.id);
                                 setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "scheduled" }));
                                 setSentinelActionNotification(
-                                  `PROACTIVE REPAIR CREATED: Ticket #${newTicketNum} generated. View repair schedules table below.`
+                                  `PROACTIVE REPAIR CREATED: Ticket #${newTicketNum} generated. Switch to 'Active & Completed Repair Schedules' tab to view.`
                                 );
                                 setTerminalFeed(prev => [
                                   ...prev,
@@ -3923,7 +3923,7 @@ export default function App() {
                               </div>
                               <strong className="text-xs font-bold text-white">Initiate Proactive Repair</strong>
                               <span className="text-[10px] text-slate-400 leading-normal">
-                                Generates a field repair ticket and adds it to the repair schedule table below.
+                                Generates a field repair ticket in the Repair Schedules tab.
                               </span>
                             </button>
 
@@ -3976,14 +3976,6 @@ export default function App() {
                     );
                   })()}
                 </div>
-
-                {/* SHOW ACTIVE & COMPLETED REPAIR SCHEDULES TABLE RIGHT BELOW TELEMETRY */}
-                <RepairSchedulesView
-                  schedules={repairSchedules}
-                  setSchedules={setRepairSchedules}
-                  onSelectRepairForParts={(id) => setSelectedRepairId(id)}
-                  onSwitchToParts={() => setSentinelSubTab("parts-inventory")}
-                />
               </>
             )}
 
