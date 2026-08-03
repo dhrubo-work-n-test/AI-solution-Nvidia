@@ -392,13 +392,30 @@ const INITIAL_SPARE_PARTS: SparePartItem[] = [
 
 const INITIAL_REPAIR_SCHEDULES: RepairSchedule[] = [
   {
+    id: "rep-disp-33019",
+    ticketNumber: "DSP-33019",
+    nodeId: "sentinel-cw-01",
+    clusterName: "CoreWeave US-East Data Center - Rack 14",
+    nodeType: "NVIDIA HGX B200 (Warranty Dispatch)",
+    serialNumber: "SN-CW-B200-884910",
+    defectReason: "Warranty Dispatch: Proactive pre-emptive replacement board shipped via priority cold-chain logistics",
+    assignedTechnician: "FedEx Priority Cold Chain / Secure Air Courier",
+    depotLocation: "Ashburn NV-Depot #4",
+    scheduledDate: "2026-08-02 08:15 UTC",
+    status: "In-Progress",
+    requiredParts: [
+      { partId: "part-b200-board", partName: "NVIDIA HGX B200 8-GPU Baseboard Module", partNumber: "NV-PART-B200-HGX-01", qty: 1, unitCostUsd: 48000 }
+    ],
+    notes: "Priority warranty replacement board dispatched under 36M active coverage."
+  },
+  {
     id: "rep-001",
     ticketNumber: "SRV-902148",
     nodeId: "sentinel-msft-02",
     clusterName: "Microsoft Azure West US3 - Pod 09",
-    nodeType: "NVIDIA DGX H100 SuperPOD",
+    nodeType: "NVIDIA DGX H100 SuperPOD (Field Repair)",
     serialNumber: "SN-AZ-H100-209481",
-    defectReason: "HBM3 Memory ECC Errors & High Junction Temp",
+    defectReason: "Field Repair: HBM3 Memory ECC Errors & High Junction Temp",
     assignedTechnician: "Alex Rivera (Certified Enterprise Field Eng)",
     depotLocation: "Phoenix West Depot #2",
     scheduledDate: "2026-08-03 14:00 UTC",
@@ -413,9 +430,9 @@ const INITIAL_REPAIR_SCHEDULES: RepairSchedule[] = [
     ticketNumber: "SRV-883102",
     nodeId: "sentinel-cw-01",
     clusterName: "CoreWeave US-East Data Center - Rack 14",
-    nodeType: "NVIDIA HGX B200 (8x B200 GPUs)",
+    nodeType: "NVIDIA HGX B200 (Field Repair)",
     serialNumber: "SN-CW-B200-884910",
-    defectReason: "MOSFET Power Regulator Phase 3 Voltage Ripple (>180mV)",
+    defectReason: "Field Repair: MOSFET Power Regulator Phase 3 Voltage Ripple (>180mV)",
     assignedTechnician: "Marcus Vance (Senior Hardware Tech)",
     depotLocation: "Ashburn NV-Depot #4",
     scheduledDate: "2026-08-01 09:30 UTC",
@@ -426,13 +443,28 @@ const INITIAL_REPAIR_SCHEDULES: RepairSchedule[] = [
     notes: "VRM phase swap underway. Hydrostatic and electrical safety checks pending."
   },
   {
+    id: "rep-adv-001",
+    ticketNumber: "ADV-102941",
+    nodeId: "sentinel-meta-03",
+    clusterName: "Meta Llama-4 Supercluster - Node 102",
+    nodeType: "NVIDIA Grace Hopper GH200 (Ops Advisory)",
+    serialNumber: "SN-META-GH-991204",
+    defectReason: "Ops Advisory: Liquid cooling loop differential pressure warning transmitted to site lead",
+    assignedTechnician: "NVSentinel Ops Lead (Customer Liaison)",
+    depotLocation: "Forest City Depot #1",
+    scheduledDate: "2026-08-03 09:00 UTC",
+    status: "Scheduled",
+    requiredParts: [],
+    notes: "Customer site lead alerted with thermal mitigation and load throttling advisory guide."
+  },
+  {
     id: "rep-003",
     ticketNumber: "SRV-771920",
     nodeId: "sentinel-meta-03",
     clusterName: "Meta Llama-4 Supercluster - Node 102",
-    nodeType: "NVIDIA Grace Hopper GH200",
+    nodeType: "NVIDIA Grace Hopper GH200 (Field Repair)",
     serialNumber: "SN-META-GH-991204",
-    defectReason: "Liquid cooling loop differential pressure drop (0.4 BAR)",
+    defectReason: "Field Repair: Liquid cooling loop differential pressure drop (0.4 BAR)",
     assignedTechnician: "Elena Rostova (Liquid Cooling Specialist)",
     depotLocation: "Forest City Depot #1",
     scheduledDate: "2026-07-28 11:00 UTC",
@@ -1084,17 +1116,49 @@ function RepairSchedulesView({
   schedules,
   setSchedules,
   onSelectRepairForParts,
-  onSwitchToParts
+  onSwitchToParts,
+  filterStatus: externalFilterStatus,
+  setFilterStatus: externalSetFilterStatus
 }: {
   schedules: RepairSchedule[];
   setSchedules: React.Dispatch<React.SetStateAction<RepairSchedule[]>>;
   onSelectRepairForParts: (repairId: string) => void;
   onSwitchToParts: () => void;
+  filterStatus?: string;
+  setFilterStatus?: (status: string) => void;
 }) {
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [internalFilterStatus, setInternalFilterStatus] = useState<string>("all");
+  const filterStatus = externalFilterStatus !== undefined ? externalFilterStatus : internalFilterStatus;
+  const setFilterStatus = externalSetFilterStatus || setInternalFilterStatus;
 
   const filtered = schedules.filter(s => {
     if (filterStatus === "all") return true;
+    if (filterStatus === "Warranty Dispatches" || filterStatus === "Dispatches") {
+      return (
+        s.ticketNumber.startsWith("DSP") ||
+        s.defectReason.toLowerCase().includes("dispatch") ||
+        s.nodeType.toLowerCase().includes("dispatch") ||
+        (s.notes && s.notes.toLowerCase().includes("dispatch"))
+      );
+    }
+    if (filterStatus === "Field Repairs") {
+      return (
+        s.ticketNumber.startsWith("SRV") ||
+        s.ticketNumber.startsWith("REP") ||
+        s.nodeType.toLowerCase().includes("field repair") ||
+        s.defectReason.toLowerCase().includes("field repair") ||
+        (!s.ticketNumber.startsWith("DSP") && !s.ticketNumber.startsWith("ADV") && !s.defectReason.toLowerCase().includes("dispatch") && !s.defectReason.toLowerCase().includes("ops advisory"))
+      );
+    }
+    if (filterStatus === "Ops Advisories" || filterStatus === "Advisories") {
+      return (
+        s.ticketNumber.startsWith("ADV") ||
+        s.defectReason.toLowerCase().includes("advisory") ||
+        s.defectReason.toLowerCase().includes("alert") ||
+        s.nodeType.toLowerCase().includes("advisory") ||
+        (s.notes && s.notes.toLowerCase().includes("advisory"))
+      );
+    }
     return s.status.toLowerCase() === filterStatus.toLowerCase();
   });
 
@@ -1125,14 +1189,14 @@ function RepairSchedulesView({
         </div>
 
         {/* STATUS FILTER PILLS */}
-        <div className="flex items-center gap-1.5 bg-[#05080e] p-1 rounded border border-nvidia-border/60 text-xs">
-          {["all", "Scheduled", "In-Progress", "Completed"].map(st => (
+        <div className="flex flex-wrap items-center gap-1.5 bg-[#05080e] p-1 rounded border border-nvidia-border/60 text-xs">
+          {["all", "Warranty Dispatches", "Field Repairs", "Ops Advisories", "Scheduled", "In-Progress", "Completed"].map(st => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
-              className={`px-2.5 py-1 rounded text-[10px] font-mono capitalize transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded text-[10px] font-mono transition-all cursor-pointer ${
                 filterStatus === st
-                  ? "bg-sky-500 text-white font-bold"
+                  ? "bg-nvidia-green text-black font-bold shadow-sm"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1863,6 +1927,7 @@ export default function App() {
   
   // Selected repair schedule for parts attachment / recommendation focus
   const [selectedRepairId, setSelectedRepairId] = useState<string | null>("rep-002");
+  const [repairFilterStatus, setRepairFilterStatus] = useState<string>("all");
   const [partsSearchQuery, setPartsSearchQuery] = useState<string>("");
   const [dispatchTargetNodeId, setDispatchTargetNodeId] = useState<string | null>(null);
 
@@ -3542,38 +3607,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* SENTINEL PROACTIVE ACTION NOTIFICATION BANNER */}
-                {sentinelActionNotification && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/40 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
-                    <div className="flex items-start gap-2.5">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="text-xs text-emerald-300 font-mono font-bold uppercase block">
-                          NVSentinel Proactive Resolution Action Completed
-                        </strong>
-                        <p className="text-xs text-slate-200 mt-0.5 font-sans leading-normal">
-                          {sentinelActionNotification}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setSentinelSubTab("dispatch-procurement")}
-                        className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 rounded text-[11px] font-mono flex items-center gap-1 cursor-pointer"
-                      >
-                        <Truck className="h-3 w-3" />
-                        <span>View Dispatches</span>
-                      </button>
-                      <button
-                        onClick={() => setSentinelActionNotification(null)}
-                        className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded text-xs cursor-pointer"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {/* SUB-TAB 1: TELEMETRY & LIVE HEALTH */}
                 {sentinelSubTab === "telemetry" && (
                   <>
@@ -3800,86 +3833,60 @@ export default function App() {
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                             {/* ACTION 1: DISPATCH REPLACEMENT */}
-                            <div className={`p-3 rounded border flex flex-col justify-between gap-2 transition-all ${
-                              currentStatus === "dispatched"
-                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                                : "bg-[#090d16] border-nvidia-border text-slate-200"
-                            }`}>
-                              <button
-                                onClick={() => {
-                                  const matchingPart = spareParts.find(p => 
-                                    (p.compatibleHardware || []).some(t => 
-                                      t.toLowerCase().includes(node.nodeType.toLowerCase()) || 
-                                      node.nodeType.toLowerCase().includes(t.toLowerCase())
-                                    )
-                                  ) || spareParts[0];
+                            <button
+                              onClick={() => {
+                                const dispatchTicketNum = `DSP-${Math.floor(100000 + Math.random() * 900000)}`;
+                                const newDispatchSchedule: RepairSchedule = {
+                                  id: `rep-disp-${Date.now()}`,
+                                  ticketNumber: dispatchTicketNum,
+                                  nodeId: node.id,
+                                  clusterName: node.clusterName,
+                                  nodeType: `${node.nodeType} (Warranty Dispatch)`,
+                                  serialNumber: node.serialNumber,
+                                  defectReason: `Warranty Dispatch: Proactive pre-emptive replacement board dispatched (${node.imminentFailureReason})`,
+                                  assignedTechnician: "NVIDIA Warranty Express Courier",
+                                  depotLocation: node.dataCenterLocation.includes("NC") ? "Forest City Depot #1" : "Ashburn NV-Depot #4",
+                                  scheduledDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10) + " 08:00 UTC",
+                                  status: "Scheduled",
+                                  requiredParts: [
+                                    {
+                                      partId: "part-b200-board",
+                                      partName: node.nodeType.includes("B200") ? "NVIDIA HGX B200 8-GPU Baseboard Module" : "NVIDIA HGX H100 8-GPU Baseboard Assembly",
+                                      partNumber: node.nodeType.includes("B200") ? "NV-PART-B200-HGX-01" : "NV-PART-H100-HGX-02",
+                                      qty: 1,
+                                      unitCostUsd: 48000
+                                    }
+                                  ],
+                                  notes: `Priority warranty replacement board dispatched under 36M active coverage for ${node.serialNumber}.`
+                                };
 
-                                  if (matchingPart && matchingPart.inStock > 0) {
-                                    setSpareParts(prev => prev.map(p => p.id === matchingPart.id ? { ...p, inStock: p.inStock - 1 } : p));
-
-                                    const newDispatchId = `DSP-${Math.floor(10000 + Math.random() * 90000)}`;
-                                    const trackingNum = `TRK-NV-${Math.floor(100000 + Math.random() * 900000)}`;
-                                    const newOrder: PartsDispatchOrder = {
-                                      id: `disp-${Date.now()}`,
-                                      dispatchId: newDispatchId,
-                                      nodeId: node.id,
-                                      clusterName: node.clusterName,
-                                      serialNumber: node.serialNumber,
-                                      partId: matchingPart.id,
-                                      partName: matchingPart.name,
-                                      partNumber: matchingPart.partNumber,
-                                      quantityDispatched: 1,
-                                      dispatchDate: new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC",
-                                      status: "Dispatched",
-                                      carrier: "FedEx Air Express / Priority Cold-Chain",
-                                      trackingNumber: trackingNum
-                                    };
-
-                                    setDispatchOrders(prev => [newOrder, ...prev]);
-                                    setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "dispatched" }));
-                                    setSentinelActionNotification(
-                                      `WARRANTY DISPATCH EXECUTED: Dispatched 1x ${matchingPart.name} (${matchingPart.partNumber}) to ${node.clusterName}. Carrier Tracking: ${trackingNum}. Inventory stock updated (${matchingPart.inStock - 1} remaining).`
-                                    );
-
-                                    setTerminalFeed(prev => [
-                                      ...prev,
-                                      `[NVSentinel] PROACTIVE DISPATCH EXECUTED: Dispatched ${matchingPart.partNumber} to ${node.clusterName} (${trackingNum}).`
-                                    ]);
-                                  } else {
-                                    setDispatchTargetNodeId(node.id);
-                                    setSentinelSubTab("parts-inventory");
-                                    setSentinelActionNotification(
-                                      `OUT OF STOCK NOTICE: Matching replacement board is out of stock. Redirected to Parts Catalog to select alternative part.`
-                                    );
-                                  }
-                                }}
-                                className="text-left w-full cursor-pointer group"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[9px] font-mono text-nvidia-green font-bold uppercase">Option A: Warranty Dispatch</span>
-                                  <Truck className="h-3.5 w-3.5 text-nvidia-green group-hover:scale-110 transition-transform" />
-                                </div>
-                                <strong className="text-xs font-bold text-white block">Dispatch Replacement Board</strong>
-                                <span className="text-[10px] text-slate-400 leading-normal block mt-1">
-                                  Instantly authorizes priority cold-chain dispatch & deducts inventory stock in place.
-                                </span>
-                              </button>
-
-                              <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1.5 border-t border-nvidia-border/40 mt-0.5">
-                                <span className="text-slate-400 text-[9px] font-mono">Custom part selection?</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDispatchTargetNodeId(node.id);
-                                    setSentinelSubTab("parts-inventory");
-                                    setSentinelActionNotification(`DISPATCH MODE: Select custom replacement board from inventory for ${node.clusterName}.`);
-                                  }}
-                                  className="text-nvidia-green underline hover:text-white cursor-pointer font-mono text-[9px]"
-                                >
-                                  Browse Spares Catalog &rarr;
-                                </button>
+                                setRepairSchedules(prev => [newDispatchSchedule, ...prev]);
+                                setSelectedRepairId(newDispatchSchedule.id);
+                                setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "dispatched" }));
+                                setRepairFilterStatus("Warranty Dispatches");
+                                setSentinelActionNotification(
+                                  `WARRANTY DISPATCH INITIATED: Ticket #${dispatchTicketNum} generated. Filtered Warranty Dispatches in table below.`
+                                );
+                                setTerminalFeed(prev => [
+                                  ...prev,
+                                  `[NVSentinel] WARRANTY DISPATCH: Issued ticket #${dispatchTicketNum} for ${node.clusterName} (S/N: ${node.serialNumber}). Filtered table below for Warranty Dispatches.`
+                                ]);
+                              }}
+                              className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
+                                currentStatus === "dispatched"
+                                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                  : "bg-[#090d16] border-nvidia-border hover:border-nvidia-green text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-mono text-nvidia-green font-bold uppercase">Option A: Warranty Dispatch</span>
+                                <Truck className="h-3.5 w-3.5 text-nvidia-green" />
                               </div>
-                            </div>
+                              <strong className="text-xs font-bold text-white">Dispatch Replacement Board</strong>
+                              <span className="text-[10px] text-slate-400 leading-normal">
+                                Issues warranty replacement order & filters Warranty Dispatches in table below.
+                              </span>
+                            </button>
 
                             {/* ACTION 2: INITIATE REPAIR REQUEST */}
                             <button
@@ -3890,9 +3897,9 @@ export default function App() {
                                   ticketNumber: newTicketNum,
                                   nodeId: node.id,
                                   clusterName: node.clusterName,
-                                  nodeType: node.nodeType,
+                                  nodeType: `${node.nodeType} (Field Repair)`,
                                   serialNumber: node.serialNumber,
-                                  defectReason: node.imminentFailureReason,
+                                  defectReason: `Field Repair: ${node.imminentFailureReason}`,
                                   assignedTechnician: "NVIDIA Field Eng (Auto-Assigned)",
                                   depotLocation: node.dataCenterLocation.includes("NC") ? "Forest City Depot #1" : "Ashburn NV-Depot #4",
                                   scheduledDate: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10) + " 10:00 UTC",
@@ -3903,12 +3910,13 @@ export default function App() {
                                 setRepairSchedules(prev => [newSchedule, ...prev]);
                                 setSelectedRepairId(newSchedule.id);
                                 setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "scheduled" }));
+                                setRepairFilterStatus("Field Repairs");
                                 setSentinelActionNotification(
-                                  `PROACTIVE REPAIR CREATED: Ticket #${newTicketNum} generated. Switch to 'Active & Completed Repair Schedules' tab to view.`
+                                  `PROACTIVE FIELD REPAIR CREATED: Ticket #${newTicketNum} generated. Filtered Field Repairs in table below.`
                                 );
                                 setTerminalFeed(prev => [
                                   ...prev,
-                                  `[NVSentinel] REPAIR TICKET CREATED: Ticket #${newTicketNum} scheduled for ${node.clusterName}.`
+                                  `[NVSentinel] REPAIR TICKET CREATED: Ticket #${newTicketNum} scheduled for ${node.clusterName}. Filtered table below for Field Repairs.`
                                 ]);
                               }}
                               className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
@@ -3923,20 +3931,40 @@ export default function App() {
                               </div>
                               <strong className="text-xs font-bold text-white">Initiate Proactive Repair</strong>
                               <span className="text-[10px] text-slate-400 leading-normal">
-                                Generates a field repair ticket in the Repair Schedules tab.
+                                Generates a field repair ticket & filters Field Repairs in table below.
                               </span>
                             </button>
 
                             {/* ACTION 3: CUSTOMER IMMINENT FAILURE ALERT */}
                             <button
                               onClick={() => {
+                                const advTicketNum = `ADV-${Math.floor(100000 + Math.random() * 900000)}`;
+                                const newAdvSchedule: RepairSchedule = {
+                                  id: `rep-adv-${Date.now()}`,
+                                  ticketNumber: advTicketNum,
+                                  nodeId: node.id,
+                                  clusterName: node.clusterName,
+                                  nodeType: `${node.nodeType} (Ops Advisory)`,
+                                  serialNumber: node.serialNumber,
+                                  defectReason: `Ops Advisory: Telemetry alert & customer operations warning transmitted (${node.imminentFailureReason})`,
+                                  assignedTechnician: "NVSentinel Ops Lead (Customer Liaison)",
+                                  depotLocation: node.dataCenterLocation.includes("NC") ? "Forest City Depot #1" : "Ashburn NV-Depot #4",
+                                  scheduledDate: new Date().toISOString().slice(0, 10) + " 09:00 UTC",
+                                  status: "Scheduled",
+                                  requiredParts: [],
+                                  notes: `Telemetry warning & mitigation advisory guide sent to operations lead for ${node.serialNumber}.`
+                                };
+
+                                setRepairSchedules(prev => [newAdvSchedule, ...prev]);
+                                setSelectedRepairId(newAdvSchedule.id);
                                 setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "alerted" }));
+                                setRepairFilterStatus("Ops Advisories");
                                 setSentinelActionNotification(
-                                  `CUSTOMER NOTIFICATION DISPATCHED: Telemetry warning alert & advisory guide transmitted to operations lead at ${node.clusterName}.`
+                                  `CUSTOMER OPS ADVISORY DISPATCHED: Ticket #${advTicketNum} generated. Filtered Ops Advisories in table below.`
                                 );
                                 setTerminalFeed(prev => [
                                   ...prev,
-                                  `[NVSentinel] CUSTOMER ALERT: Transmitted telemetry health report & point-of-failure alert to customer operations lead.`
+                                  `[NVSentinel] CUSTOMER ALERT: Transmitted advisory #${advTicketNum} for ${node.clusterName} (S/N: ${node.serialNumber}). Filtered table below for Ops Advisories.`
                                 ]);
                               }}
                               className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
@@ -3951,7 +3979,7 @@ export default function App() {
                               </div>
                               <strong className="text-xs font-bold text-white">Alert Customer Operations</strong>
                               <span className="text-[10px] text-slate-400 leading-normal">
-                                Sends data center lead real-time warning & mitigation guidance.
+                                Transmits customer ops alert & filters Ops Advisories in table below.
                               </span>
                             </button>
                           </div>
@@ -3976,6 +4004,16 @@ export default function App() {
                     );
                   })()}
                 </div>
+
+                {/* SHOW ACTIVE & COMPLETED REPAIR SCHEDULES TABLE RIGHT BELOW TELEMETRY */}
+                <RepairSchedulesView
+                  schedules={repairSchedules}
+                  setSchedules={setRepairSchedules}
+                  onSelectRepairForParts={(id) => setSelectedRepairId(id)}
+                  onSwitchToParts={() => setSentinelSubTab("parts-inventory")}
+                  filterStatus={repairFilterStatus}
+                  setFilterStatus={setRepairFilterStatus}
+                />
               </>
             )}
 
@@ -3986,6 +4024,8 @@ export default function App() {
                 setSchedules={setRepairSchedules}
                 onSelectRepairForParts={(id) => setSelectedRepairId(id)}
                 onSwitchToParts={() => setSentinelSubTab("parts-inventory")}
+                filterStatus={repairFilterStatus}
+                setFilterStatus={setRepairFilterStatus}
               />
             )}
 
