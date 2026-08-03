@@ -48,6 +48,76 @@ export interface RmaTriageResult {
   };
 }
 
+export interface AttachedPartItem {
+  partId: string;
+  partName: string;
+  partNumber: string;
+  qty: number;
+  unitCostUsd: number;
+}
+
+export interface RepairSchedule {
+  id: string;
+  ticketNumber: string;
+  nodeId: string;
+  clusterName: string;
+  nodeType: string;
+  serialNumber: string;
+  defectReason: string;
+  assignedTechnician: string;
+  depotLocation: string;
+  scheduledDate: string;
+  completionDate?: string;
+  status: "Scheduled" | "In-Progress" | "Completed" | "Awaiting Parts";
+  requiredParts: AttachedPartItem[];
+  notes?: string;
+}
+
+export interface SparePartItem {
+  id: string;
+  partNumber: string;
+  name: string;
+  category: "GPU Accelerator Module" | "Liquid Cooling & Fittings" | "VRM Power Phase" | "NVLink Interconnect" | "Memory Substrate";
+  compatibleHardware: string[];
+  inStock: number;
+  safetyStock: number;
+  unitCostUsd: number;
+  depotLocation: string;
+  supplier: string;
+  leadTimeDays: number;
+}
+
+export interface PartsDispatchOrder {
+  id: string;
+  dispatchId: string;
+  nodeId: string;
+  clusterName: string;
+  serialNumber: string;
+  partId: string;
+  partName: string;
+  partNumber: string;
+  quantityDispatched: number;
+  dispatchDate: string;
+  status: "Dispatched" | "In-Transit" | "Delivered";
+  carrier: string;
+  trackingNumber: string;
+}
+
+export interface ProcurementReplenishmentOrder {
+  id: string;
+  poNumber: string;
+  partId: string;
+  partName: string;
+  partNumber: string;
+  quantityOrdered: number;
+  unitCostUsd: number;
+  totalCostUsd: number;
+  supplier: string;
+  orderDate: string;
+  estimatedDeliveryDate: string;
+  status: "Submitted to Supplier" | "PO Issued" | "In Production" | "Shipped";
+}
+
 export interface NvSentinelNode {
   id: string;
   clusterName: string;
