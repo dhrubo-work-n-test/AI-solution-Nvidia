@@ -3542,6 +3542,38 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* SENTINEL PROACTIVE ACTION NOTIFICATION BANNER */}
+                {sentinelActionNotification && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/40 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-xs text-emerald-300 font-mono font-bold uppercase block">
+                          NVSentinel Proactive Resolution Action Completed
+                        </strong>
+                        <p className="text-xs text-slate-200 mt-0.5 font-sans leading-normal">
+                          {sentinelActionNotification}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setSentinelSubTab("dispatch-procurement")}
+                        className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 rounded text-[11px] font-mono flex items-center gap-1 cursor-pointer"
+                      >
+                        <Truck className="h-3 w-3" />
+                        <span>View Dispatches</span>
+                      </button>
+                      <button
+                        onClick={() => setSentinelActionNotification(null)}
+                        className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded text-xs cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* SUB-TAB 1: TELEMETRY & LIVE HEALTH */}
                 {sentinelSubTab === "telemetry" && (
                   <>
@@ -3768,34 +3800,86 @@ export default function App() {
 
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                             {/* ACTION 1: DISPATCH REPLACEMENT */}
-                            <button
-                              onClick={() => {
-                                setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "dispatched" }));
-                                setDispatchTargetNodeId(node.id);
-                                setSentinelSubTab("parts-inventory");
-                                setSentinelActionNotification(
-                                  `DISPATCH MODE ACTIVATED: Select replacement board/part in inventory to confirm priority dispatch for ${node.clusterName}.`
-                                );
-                                setTerminalFeed(prev => [
-                                  ...prev,
-                                  `[NVSentinel] PROACTIVE DISPATCH: Opened Parts Catalog to authorize dispatch for ${node.clusterName} (S/N: ${node.serialNumber}).`
-                                ]);
-                              }}
-                              className={`p-3 rounded border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
-                                currentStatus === "dispatched"
-                                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                                  : "bg-[#090d16] border-nvidia-border hover:border-nvidia-green text-slate-200"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-mono text-nvidia-green font-bold uppercase">Option A: Warranty Dispatch</span>
-                                <Truck className="h-3.5 w-3.5 text-nvidia-green" />
+                            <div className={`p-3 rounded border flex flex-col justify-between gap-2 transition-all ${
+                              currentStatus === "dispatched"
+                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                : "bg-[#090d16] border-nvidia-border text-slate-200"
+                            }`}>
+                              <button
+                                onClick={() => {
+                                  const matchingPart = spareParts.find(p => 
+                                    (p.compatibleHardware || []).some(t => 
+                                      t.toLowerCase().includes(node.nodeType.toLowerCase()) || 
+                                      node.nodeType.toLowerCase().includes(t.toLowerCase())
+                                    )
+                                  ) || spareParts[0];
+
+                                  if (matchingPart && matchingPart.inStock > 0) {
+                                    setSpareParts(prev => prev.map(p => p.id === matchingPart.id ? { ...p, inStock: p.inStock - 1 } : p));
+
+                                    const newDispatchId = `DSP-${Math.floor(10000 + Math.random() * 90000)}`;
+                                    const trackingNum = `TRK-NV-${Math.floor(100000 + Math.random() * 900000)}`;
+                                    const newOrder: PartsDispatchOrder = {
+                                      id: `disp-${Date.now()}`,
+                                      dispatchId: newDispatchId,
+                                      nodeId: node.id,
+                                      clusterName: node.clusterName,
+                                      serialNumber: node.serialNumber,
+                                      partId: matchingPart.id,
+                                      partName: matchingPart.name,
+                                      partNumber: matchingPart.partNumber,
+                                      quantityDispatched: 1,
+                                      dispatchDate: new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC",
+                                      status: "Dispatched",
+                                      carrier: "FedEx Air Express / Priority Cold-Chain",
+                                      trackingNumber: trackingNum
+                                    };
+
+                                    setDispatchOrders(prev => [newOrder, ...prev]);
+                                    setSentinelProactiveActionStatus(prev => ({ ...prev, [node.id]: "dispatched" }));
+                                    setSentinelActionNotification(
+                                      `WARRANTY DISPATCH EXECUTED: Dispatched 1x ${matchingPart.name} (${matchingPart.partNumber}) to ${node.clusterName}. Carrier Tracking: ${trackingNum}. Inventory stock updated (${matchingPart.inStock - 1} remaining).`
+                                    );
+
+                                    setTerminalFeed(prev => [
+                                      ...prev,
+                                      `[NVSentinel] PROACTIVE DISPATCH EXECUTED: Dispatched ${matchingPart.partNumber} to ${node.clusterName} (${trackingNum}).`
+                                    ]);
+                                  } else {
+                                    setDispatchTargetNodeId(node.id);
+                                    setSentinelSubTab("parts-inventory");
+                                    setSentinelActionNotification(
+                                      `OUT OF STOCK NOTICE: Matching replacement board is out of stock. Redirected to Parts Catalog to select alternative part.`
+                                    );
+                                  }
+                                }}
+                                className="text-left w-full cursor-pointer group"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[9px] font-mono text-nvidia-green font-bold uppercase">Option A: Warranty Dispatch</span>
+                                  <Truck className="h-3.5 w-3.5 text-nvidia-green group-hover:scale-110 transition-transform" />
+                                </div>
+                                <strong className="text-xs font-bold text-white block">Dispatch Replacement Board</strong>
+                                <span className="text-[10px] text-slate-400 leading-normal block mt-1">
+                                  Instantly authorizes priority cold-chain dispatch & deducts inventory stock in place.
+                                </span>
+                              </button>
+
+                              <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1.5 border-t border-nvidia-border/40 mt-0.5">
+                                <span className="text-slate-400 text-[9px] font-mono">Custom part selection?</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDispatchTargetNodeId(node.id);
+                                    setSentinelSubTab("parts-inventory");
+                                    setSentinelActionNotification(`DISPATCH MODE: Select custom replacement board from inventory for ${node.clusterName}.`);
+                                  }}
+                                  className="text-nvidia-green underline hover:text-white cursor-pointer font-mono text-[9px]"
+                                >
+                                  Browse Spares Catalog &rarr;
+                                </button>
                               </div>
-                              <strong className="text-xs font-bold text-white">Dispatch Replacement Board</strong>
-                              <span className="text-[10px] text-slate-400 leading-normal">
-                                Opens parts catalog to select available hardware and deducts stock upon dispatch.
-                              </span>
-                            </button>
+                            </div>
 
                             {/* ACTION 2: INITIATE REPAIR REQUEST */}
                             <button
