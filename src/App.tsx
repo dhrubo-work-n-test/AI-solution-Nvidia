@@ -42,6 +42,7 @@ import {
   Filter,
   MapPin,
   CornerDownRight,
+  Calendar,
   X
 } from "lucide-react";
 import { 
@@ -527,6 +528,211 @@ const INITIAL_PROCUREMENT_ORDERS: ProcurementReplenishmentOrder[] = [
   }
 ];
 
+export interface PredictiveScheduleItem {
+  id: string;
+  horizon: "2M" | "4M" | "6M";
+  targetWindow: string;
+  dataCenter: string;
+  locationCode: string;
+  rackLocation: string;
+  hardware: string;
+  serialOrCluster: string;
+  failureDriver: string;
+  historicalMtbfHours: number;
+  requiredPartName: string;
+  requiredPartNumber: string;
+  requiredQty: number;
+  unitCostUsd: number;
+  inStockQty: number;
+  leadTimeDays: number;
+  supplyStatus: "Stock Covered" | "Reorder Required" | "Buffer Deficit";
+  allocated: boolean;
+}
+
+export interface ForecastProjectionMonth {
+  month: string;
+  horizon: "2M" | "4M" | "6M";
+  baseboards: number;
+  coolingPumps: number;
+  vrmModules: number;
+  hbmMemory: number;
+  totalEvents: number;
+  depotStockBuffer: number;
+  estimatedCostUsd: number;
+}
+
+const FORECAST_PROJECTIONS_DATA: ForecastProjectionMonth[] = [
+  { month: "Aug '26", horizon: "2M", baseboards: 3, coolingPumps: 2, vrmModules: 5, hbmMemory: 2, totalEvents: 4, depotStockBuffer: 42, estimatedCostUsd: 184000 },
+  { month: "Sep '26", horizon: "2M", baseboards: 4, coolingPumps: 3, vrmModules: 8, hbmMemory: 3, totalEvents: 6, depotStockBuffer: 38, estimatedCostUsd: 245000 },
+  { month: "Oct '26", horizon: "4M", baseboards: 5, coolingPumps: 4, vrmModules: 12, hbmMemory: 4, totalEvents: 8, depotStockBuffer: 30, estimatedCostUsd: 310000 },
+  { month: "Nov '26", horizon: "4M", baseboards: 6, coolingPumps: 5, vrmModules: 10, hbmMemory: 5, totalEvents: 7, depotStockBuffer: 26, estimatedCostUsd: 368000 },
+  { month: "Dec '26", horizon: "6M", baseboards: 7, coolingPumps: 6, vrmModules: 15, hbmMemory: 6, totalEvents: 9, depotStockBuffer: 18, estimatedCostUsd: 420000 },
+  { month: "Jan '27", horizon: "6M", baseboards: 8, coolingPumps: 7, vrmModules: 18, hbmMemory: 8, totalEvents: 10, depotStockBuffer: 12, estimatedCostUsd: 512000 },
+];
+
+const INITIAL_PREDICTIVE_SCHEDULES: PredictiveScheduleItem[] = [
+  {
+    id: "pred-001",
+    horizon: "2M",
+    targetWindow: "Aug 18 - Aug 22, 2026",
+    dataCenter: "CoreWeave US-East Data Center",
+    locationCode: "Ashburn, VA",
+    rackLocation: "Rack 14 - Row B",
+    hardware: "NVIDIA HGX B200 (8x B200)",
+    serialOrCluster: "SN-CW-B200-884910",
+    failureDriver: "MOSFET Power Phase 3 Voltage Ripple (>180mV)",
+    historicalMtbfHours: 4200,
+    requiredPartName: "NVIDIA HGX B200 8-GPU Baseboard Module",
+    requiredPartNumber: "NV-PART-B200-HGX-01",
+    requiredQty: 1,
+    unitCostUsd: 48000,
+    inStockQty: 4,
+    leadTimeDays: 14,
+    supplyStatus: "Stock Covered",
+    allocated: true
+  },
+  {
+    id: "pred-002",
+    horizon: "2M",
+    targetWindow: "Sep 04 - Sep 08, 2026",
+    dataCenter: "Microsoft Azure West US3",
+    locationCode: "Phoenix, AZ",
+    rackLocation: "Pod 09 - Rack 04",
+    hardware: "NVIDIA DGX H100 SuperPOD",
+    serialOrCluster: "SN-AZ-H100-209481",
+    failureDriver: "HBM3 Memory Substrate ECC Drift Rate (>15/sec)",
+    historicalMtbfHours: 3800,
+    requiredPartName: "HBM3 High-Bandwidth Memory Substrate Module",
+    requiredPartNumber: "NV-PART-HBM3-192G",
+    requiredQty: 2,
+    unitCostUsd: 6500,
+    inStockQty: 12,
+    leadTimeDays: 10,
+    supplyStatus: "Stock Covered",
+    allocated: false
+  },
+  {
+    id: "pred-003",
+    horizon: "2M",
+    targetWindow: "Sep 20 - Sep 25, 2026",
+    dataCenter: "Meta Llama-4 Supercluster",
+    locationCode: "Forest City, NC",
+    rackLocation: "Node 102 - Pod 01",
+    hardware: "NVIDIA Grace Hopper GH200",
+    serialOrCluster: "SN-META-GH-991204",
+    failureDriver: "Liquid Cooling Cold Plate QD Fitting Delta-P Loss",
+    historicalMtbfHours: 5100,
+    requiredPartName: "Quick-Disconnect Liquid Valve Fitting",
+    requiredPartNumber: "NV-PART-COOL-QD-50",
+    requiredQty: 2,
+    unitCostUsd: 850,
+    inStockQty: 30,
+    leadTimeDays: 5,
+    supplyStatus: "Stock Covered",
+    allocated: false
+  },
+  {
+    id: "pred-004",
+    horizon: "4M",
+    targetWindow: "Oct 12 - Oct 16, 2026",
+    dataCenter: "Amazon AWS US-East-1",
+    locationCode: "Ashburn, VA",
+    rackLocation: "Cluster 08 - Rack 12",
+    hardware: "NVIDIA Blackwell GB200 NVL72",
+    serialOrCluster: "SN-AWS-GB200-1102",
+    failureDriver: "NVLink Switch Tray Jitter & Thermal Expansion Strain",
+    historicalMtbfHours: 2900,
+    requiredPartName: "NVLink Switch Tray Interconnect Board",
+    requiredPartNumber: "NV-PART-NVL-SWITCH-72",
+    requiredQty: 1,
+    unitCostUsd: 32000,
+    inStockQty: 2,
+    leadTimeDays: 21,
+    supplyStatus: "Reorder Required",
+    allocated: false
+  },
+  {
+    id: "pred-005",
+    horizon: "4M",
+    targetWindow: "Nov 02 - Nov 06, 2026",
+    dataCenter: "Google Cloud us-central1",
+    locationCode: "Council Bluffs, IA",
+    rackLocation: "Zone A - Rack 22",
+    hardware: "NVIDIA HGX B200 (8x B200)",
+    serialOrCluster: "SN-GCP-B200-4491",
+    failureDriver: "VRM Phase 1-4 Gate Driver Duty Cycle Imbalance",
+    historicalMtbfHours: 4600,
+    requiredPartName: "MOSFET Power Regulator Phase-3 VRM Module",
+    requiredPartNumber: "NV-PART-VRM-12V-V03",
+    requiredQty: 4,
+    unitCostUsd: 1250,
+    inStockQty: 45,
+    leadTimeDays: 7,
+    supplyStatus: "Stock Covered",
+    allocated: false
+  },
+  {
+    id: "pred-006",
+    horizon: "4M",
+    targetWindow: "Nov 18 - Nov 23, 2026",
+    dataCenter: "CoreWeave US-East Data Center",
+    locationCode: "Ashburn, VA",
+    rackLocation: "Rack 08 - Row A",
+    hardware: "NVIDIA HGX B200 (8x B200)",
+    serialOrCluster: "SN-CW-B200-90123",
+    failureDriver: "Baseboard High-Current Busbar Solder Thermal Fatigue",
+    historicalMtbfHours: 3200,
+    requiredPartName: "NVIDIA HGX B200 8-GPU Baseboard Module",
+    requiredPartNumber: "NV-PART-B200-HGX-01",
+    requiredQty: 2,
+    unitCostUsd: 48000,
+    inStockQty: 1,
+    leadTimeDays: 18,
+    supplyStatus: "Buffer Deficit",
+    allocated: false
+  },
+  {
+    id: "pred-007",
+    horizon: "6M",
+    targetWindow: "Dec 10 - Dec 15, 2026",
+    dataCenter: "Microsoft Azure West US3",
+    locationCode: "Phoenix, AZ",
+    rackLocation: "Pod 14 - Rack 08",
+    hardware: "NVIDIA DGX H100 SuperPOD",
+    serialOrCluster: "SN-AZ-H100-77491",
+    failureDriver: "Liquid Cooling Pumping Loop Impeller Wear (MTBF 15,000 hrs)",
+    historicalMtbfHours: 14800,
+    requiredPartName: "GH200 Micro-Channel Liquid Cold Plate",
+    requiredPartNumber: "NV-PART-GH200-CP-02",
+    requiredQty: 3,
+    unitCostUsd: 2100,
+    inStockQty: 15,
+    leadTimeDays: 9,
+    supplyStatus: "Stock Covered",
+    allocated: false
+  },
+  {
+    id: "pred-008",
+    horizon: "6M",
+    targetWindow: "Jan 12 - Jan 18, 2027",
+    dataCenter: "Meta Llama-4 Supercluster",
+    locationCode: "Forest City, NC",
+    rackLocation: "Node 204 - Pod 03",
+    hardware: "NVIDIA Blackwell GB200 NVL72",
+    serialOrCluster: "SN-META-GB200-3301",
+    failureDriver: "HBM3e Memory Controller Thermal Degradation (>92°C)",
+    historicalMtbfHours: 3100,
+    requiredPartName: "HBM3 High-Bandwidth Memory Substrate Module",
+    requiredPartNumber: "NV-PART-HBM3-192G",
+    requiredQty: 4,
+    unitCostUsd: 6500,
+    inStockQty: 3,
+    leadTimeDays: 14,
+    supplyStatus: "Buffer Deficit",
+    allocated: false
+  }
+];
+
 // Helper to replace **text** and `code` with styled React components
 function parseBold(text: string) {
   const parts = text.split(/\*\*([^*]+)\*\*/g);
@@ -650,6 +856,33 @@ function HeaderWithInfo({ title, tooltip, subtitle }: { title: string; tooltip: 
         </div>
       </div>
       {subtitle && <p className="text-xs text-nvidia-gray">{subtitle}</p>}
+    </div>
+  );
+}
+
+function InfoTag({ text, title = "Information", size = "md" }: { text: string; title?: string; size?: "sm" | "md" | "lg" }) {
+  const [hovered, setHovered] = useState(false);
+  const iconSize = size === "sm" ? "h-3 w-3" : size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5";
+  return (
+    <div 
+      className="relative inline-flex items-center justify-center cursor-help text-slate-400 hover:text-nvidia-green transition-colors bg-slate-800/80 hover:bg-nvidia-green/20 p-1 rounded-full border border-nvidia-border/60 shrink-0 select-none z-20"
+      onMouseEnter={(e) => { e.stopPropagation(); setHovered(true); }}
+      onMouseLeave={(e) => { e.stopPropagation(); setHovered(false); }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Info className={iconSize} />
+      {hovered && (
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 top-full mt-2 w-64 sm:w-72 bg-[#0d1320] border border-nvidia-border rounded-lg p-3 text-xs text-slate-200 leading-relaxed shadow-2xl shadow-black/95 font-sans pointer-events-none animate-in fade-in duration-150 text-left">
+          <div className="absolute border-4 border-transparent border-b-[#0d1320] -top-2 left-1/2 -translate-x-1/2"></div>
+          {title && (
+            <div className="font-semibold text-nvidia-green font-mono text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              <span>{title}</span>
+            </div>
+          )}
+          <p className="text-slate-300 font-sans text-[11px] leading-relaxed">{text}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1182,6 +1415,10 @@ function RepairSchedulesView({
           <div className="flex items-center gap-2">
             <Wrench className="h-4 w-4 text-sky-400" />
             <h3 className="font-bold text-white text-sm">Active & Completed Field Repair Schedules</h3>
+            <InfoTag 
+              title="Field Repair Schedules" 
+              text="Central tracking table for proactive field repairs, technician assignments, scheduled service windows, and component attachments." 
+            />
           </div>
           <p className="text-[11px] text-slate-400">
             Real-time status tracking of proactive repair jobs, assigned enterprise field technicians, and required hardware parts.
@@ -1211,12 +1448,42 @@ function RepairSchedulesView({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
-              <th className="p-2.5">Ticket # & Node</th>
-              <th className="p-2.5">Defect / Reason</th>
-              <th className="p-2.5">Assigned Tech & Depot</th>
-              <th className="p-2.5">Schedule / Date</th>
-              <th className="p-2.5">Required Parts</th>
-              <th className="p-2.5">Status</th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Ticket # & Node</span>
+                  <InfoTag size="sm" title="Ticket & Node" text="Unique service ticket reference number, target data center cluster name, and equipment serial number." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Defect / Reason</span>
+                  <InfoTag size="sm" title="Defect Cause" text="Root cause failure trigger identified by NVSentinel telemetry (e.g. VRM voltage ripple, thermal junction spike)." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Assigned Tech & Depot</span>
+                  <InfoTag size="sm" title="Technician & Depot" text="NVIDIA certified field engineer assigned to perform hardware service and the regional service depot." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Schedule / Date</span>
+                  <InfoTag size="sm" title="Service Window" text="Scheduled date and UTC time window for technician site entry and maintenance completion." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Required Parts</span>
+                  <InfoTag size="sm" title="Attached Spares" text="List of spare parts attached to this repair ticket from depot inventory." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Status</span>
+                  <InfoTag size="sm" title="Repair Status" text="Lifecycle state of the repair: Scheduled, In-Progress, or Completed." />
+                </div>
+              </th>
               <th className="p-2.5 text-right">Actions</th>
             </tr>
           </thead>
@@ -1467,6 +1734,10 @@ function PartsInventoryView({
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-nvidia-green" />
             <h3 className="font-bold text-white text-sm">Spare Parts Inventory & Replenishment Planning</h3>
+            <InfoTag 
+              title="Spare Parts Inventory" 
+              text="Central catalog of spare GPU modules, VRM power phases, liquid cooling fittings, and NVLink switches with live stock level, safety buffer alerts, and procurement triggers." 
+            />
           </div>
           <p className="text-[11px] text-slate-400">
             Enterprise hardware spares management. Real-time safety stock threshold monitoring and automatic procurement replenishment trigger.
@@ -1576,10 +1847,30 @@ function PartsInventoryView({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
-              <th className="p-2.5">Part # & Name</th>
-              <th className="p-2.5">Category & Hardware Compatibility</th>
-              <th className="p-2.5">In-Stock / Safety Level</th>
-              <th className="p-2.5">Unit Cost & Lead Time</th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Part # & Name</span>
+                  <InfoTag size="sm" title="Part Identifier" text="NVIDIA catalog part SKU number, technical name, and assigned regional depot location." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Category & Hardware Compatibility</span>
+                  <InfoTag size="sm" title="Compatibility" text="Component hardware class and target server architecture (e.g. HGX B200, DGX H100)." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>In-Stock / Safety Level</span>
+                  <InfoTag size="sm" title="Stock Buffer" text="Current warehouse inventory level compared against the minimum safety stock threshold." />
+                </div>
+              </th>
+              <th className="p-2.5">
+                <div className="flex items-center gap-1">
+                  <span>Unit Cost & Lead Time</span>
+                  <InfoTag size="sm" title="Cost & Delivery" text="Unit replacement price in USD, tier-1 supplier vendor, and procurement manufacturing lead time in days." />
+                </div>
+              </th>
               <th className="p-2.5 text-right">Actions</th>
             </tr>
           </thead>
@@ -1694,6 +1985,10 @@ function DispatchAndProcurementView({
           <div className="flex items-center gap-2">
             <Truck className="h-4 w-4 text-emerald-400" />
             <h3 className="font-bold text-white text-sm">Parts Dispatch Orders & Procurement Replenishment POs</h3>
+            <InfoTag 
+              title="Dispatches & POs" 
+              text="Audit log tracking both outbound replacement hardware dispatches to customer data center sites and inbound procurement purchase orders placed with component manufacturers." 
+            />
           </div>
           <p className="text-[11px] text-slate-400">
             Logistics fulfillment audit trail for dispatched replacement hardware and issued supplier purchase orders.
@@ -1725,12 +2020,42 @@ function DispatchAndProcurementView({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
-                <th className="p-2.5">Dispatch ID</th>
-                <th className="p-2.5">Target Data Center / Node</th>
-                <th className="p-2.5">Dispatched Hardware</th>
-                <th className="p-2.5">Carrier & Tracking</th>
-                <th className="p-2.5">Dispatch Date</th>
-                <th className="p-2.5">Status</th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Dispatch ID</span>
+                    <InfoTag size="sm" title="Dispatch Reference" text="System-generated hardware dispatch tracking code." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Target Data Center / Node</span>
+                    <InfoTag size="sm" title="Destination" text="Target customer cluster location and node serial number." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Dispatched Hardware</span>
+                    <InfoTag size="sm" title="Dispatched SKU" text="Name, part SKU, and quantity of hardware sent." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Carrier & Tracking</span>
+                    <InfoTag size="sm" title="Cold-Chain Carrier" text="Priority air express carrier name and live tracking number." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Dispatch Date</span>
+                    <InfoTag size="sm" title="Timestamp" text="UTC timestamp when the hardware left the regional depot." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Status</span>
+                    <InfoTag size="sm" title="Shipping Status" text="Current status of the shipment (e.g. Dispatched, In-Transit, Delivered)." />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-nvidia-border/30">
@@ -1765,12 +2090,42 @@ function DispatchAndProcurementView({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-nvidia-border/60 text-[10px] font-mono text-slate-400 uppercase bg-[#05080e]">
-                <th className="p-2.5">PO Number</th>
-                <th className="p-2.5">Part Name & Supplier</th>
-                <th className="p-2.5">Quantity & Unit Cost</th>
-                <th className="p-2.5">Total PO Amount</th>
-                <th className="p-2.5">Order / Est. Delivery</th>
-                <th className="p-2.5">Status</th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>PO Number</span>
+                    <InfoTag size="sm" title="Purchase Order #" text="NVIDIA procurement purchase order reference." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Part Name & Supplier</span>
+                    <InfoTag size="sm" title="Part & Supplier" text="Replacement part SKU and component manufacturing partner." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Quantity & Unit Cost</span>
+                    <InfoTag size="sm" title="Order Volume" text="Order batch volume and unit cost in USD." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Total PO Amount</span>
+                    <InfoTag size="sm" title="Total Valuation" text="Total purchase order monetary value." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Order / Est. Delivery</span>
+                    <InfoTag size="sm" title="Lead Window" text="Order placement date and expected factory delivery window." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Status</span>
+                    <InfoTag size="sm" title="PO Status" text="State of the PO (e.g. Approved, In-Production, Shipped)." />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-nvidia-border/30">
@@ -1900,6 +2255,518 @@ function PoCreationModal({
   );
 }
 
+function ServiceAndPartsForecastView({
+  spareParts,
+  setSpareParts,
+  procurementOrders,
+  setProcurementOrders,
+  onOpenPoModal,
+  setTerminalFeed
+}: {
+  spareParts: SparePartItem[];
+  setSpareParts: React.Dispatch<React.SetStateAction<SparePartItem[]>>;
+  procurementOrders: ProcurementReplenishmentOrder[];
+  setProcurementOrders: React.Dispatch<React.SetStateAction<ProcurementReplenishmentOrder[]>>;
+  onOpenPoModal: (part: SparePartItem, defaultQty: number) => void;
+  setTerminalFeed: React.Dispatch<React.SetStateAction<string[]>>;
+}) {
+  const [horizonFilter, setHorizonFilter] = useState<"all" | "2M" | "4M" | "6M">("all");
+  const [dataCenterFilter, setDataCenterFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [predictiveSchedules, setPredictiveSchedules] = useState<PredictiveScheduleItem[]>(INITIAL_PREDICTIVE_SCHEDULES);
+  const [bannerNotice, setBannerNotice] = useState<string | null>(null);
+  const [activeChartTab, setActiveChartTab] = useState<"monthly" | "dataCenter">("monthly");
+
+  // Data Center list for filter
+  const dcList = Array.from(new Set(INITIAL_PREDICTIVE_SCHEDULES.map(s => s.dataCenter)));
+
+  // Filter items
+  const filteredSchedules = predictiveSchedules.filter(item => {
+    if (horizonFilter !== "all" && item.horizon !== horizonFilter) return false;
+    if (dataCenterFilter !== "all" && item.dataCenter !== dataCenterFilter) return false;
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      const match =
+        item.dataCenter.toLowerCase().includes(q) ||
+        item.hardware.toLowerCase().includes(q) ||
+        item.serialOrCluster.toLowerCase().includes(q) ||
+        item.failureDriver.toLowerCase().includes(q) ||
+        item.requiredPartName.toLowerCase().includes(q) ||
+        item.requiredPartNumber.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  // Calculate KPIs
+  const totalEvents = filteredSchedules.length;
+  const shortfallCount = filteredSchedules.filter(s => s.supplyStatus !== "Stock Covered").length;
+  const totalCapExUsd = filteredSchedules.reduce((acc, curr) => acc + (curr.requiredQty * curr.unitCostUsd), 0);
+  const allocatedCount = filteredSchedules.filter(s => s.allocated).length;
+  const allocationRate = totalEvents > 0 ? Math.round((allocatedCount / totalEvents) * 100) : 100;
+
+  // Chart data 2: Data Center maintenance load breakdown across horizons
+  const dcLoadData = dcList.map(dcName => {
+    const itemsForDc = predictiveSchedules.filter(s => s.dataCenter === dcName);
+    return {
+      name: dcName.replace(" Data Center", "").replace(" Supercluster", ""),
+      m2: itemsForDc.filter(s => s.horizon === "2M").length,
+      m4: itemsForDc.filter(s => s.horizon === "4M").length,
+      m6: itemsForDc.filter(s => s.horizon === "6M").length,
+      total: itemsForDc.length
+    };
+  });
+
+  // Handle Pre-allocation
+  const handlePreAllocate = (item: PredictiveScheduleItem) => {
+    setPredictiveSchedules(prev =>
+      prev.map(s => (s.id === item.id ? { ...s, allocated: true } : s))
+    );
+
+    // Deduct/Reserve from spareParts if matching
+    setSpareParts(prev =>
+      prev.map(p => {
+        if (p.partNumber === item.requiredPartNumber && p.inStock >= item.requiredQty) {
+          return { ...p, inStock: p.inStock - item.requiredQty };
+        }
+        return p;
+      })
+    );
+
+    const logMsg = `[NVSentinel Planning] PRE-ALLOCATED ${item.requiredQty}x ${item.requiredPartName} for ${item.dataCenter} (${item.targetWindow}). Inventory reserved in depot.`;
+    setTerminalFeed(prev => [...prev, logMsg]);
+    setBannerNotice(`STOCK RESERVED: ${item.requiredQty}x ${item.requiredPartName} allocated for ${item.dataCenter} (${item.targetWindow}).`);
+  };
+
+  // Handle Auto-Issuing PO or Opening Modal
+  const handleIssuePo = (item: PredictiveScheduleItem) => {
+    const matchingPart = spareParts.find(p => p.partNumber === item.requiredPartNumber);
+    if (matchingPart) {
+      onOpenPoModal(matchingPart, item.requiredQty * 3);
+    } else {
+      const poNum = `PO-NV-${Math.floor(100000 + Math.random() * 900000)}`;
+      const newPo: ProcurementReplenishmentOrder = {
+        id: `po-${Date.now()}`,
+        poNumber: poNum,
+        partId: `part-${item.id}`,
+        partName: item.requiredPartName,
+        partNumber: item.requiredPartNumber,
+        supplier: "NVIDIA Priority Component Foundry",
+        quantityOrdered: item.requiredQty * 4,
+        unitCostUsd: item.unitCostUsd,
+        totalCostUsd: item.requiredQty * 4 * item.unitCostUsd,
+        orderDate: new Date().toISOString().slice(0, 10),
+        estimatedDeliveryDate: new Date(Date.now() + 86400000 * 10).toISOString().slice(0, 10),
+        status: "PO Issued"
+      };
+      setProcurementOrders(prev => [newPo, ...prev]);
+      setPredictiveSchedules(prev =>
+        prev.map(s => (s.id === item.id ? { ...s, supplyStatus: "Stock Covered", allocated: true } : s))
+      );
+      const logMsg = `[NVSentinel Planning] ISSUED PO #${poNum} for ${item.requiredPartName} (${item.requiredQty * 4} units). Supply deficit covered.`;
+      setTerminalFeed(prev => [...prev, logMsg]);
+      setBannerNotice(`EXPRESS PO GENERATED: PO #${poNum} issued for ${item.requiredPartName} (${item.dataCenter}).`);
+    }
+  };
+
+  return (
+    <div className="bg-nvidia-card border border-nvidia-border rounded-lg p-4 flex flex-col gap-4 animate-in fade-in duration-200">
+      {/* HEADER & TOOLTIP */}
+      <HeaderWithInfo
+        title="2M / 4M / 6M Servicing & Parts Replacement Forecast"
+        subtitle="Predictive maintenance schedules & spare parts demand forecasts calculated from historical MTBF, thermal degradation curves, and data center repair analysis."
+        tooltip="Predictive Servicing & Parts Planning forecast projects 60-day (2M), 120-day (4M), and 180-day (6M) component failure probability across global AI data centers. WHAT IT DOES: Analyzes junction temperature wear, VRM voltage ripple jitter, and HBM memory ECC drift history to project future maintenance windows and spare parts consumption. HOW TO USE IT: 1. Toggle between 2M, 4M, and 6M horizon pills or filter by data center. 2. Inspect component demand vs depot buffer charts. 3. Pre-allocate depot inventory or issue replenishment POs directly from the schedule grid."
+      />
+
+      {/* BANNER NOTIFICATION */}
+      {bannerNotice && (
+        <div className="bg-nvidia-green/10 border border-nvidia-green/40 p-3 rounded flex items-center justify-between text-xs text-nvidia-green animate-in fade-in duration-200 font-mono">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-nvidia-green" />
+            <span>{bannerNotice}</span>
+          </div>
+          <button onClick={() => setBannerNotice(null)} className="text-[10px] text-slate-400 hover:text-white uppercase font-bold underline cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* KPI METRICS OVERVIEW CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div className="bg-[#05080e] border border-nvidia-border/60 p-3 rounded flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Projected Servicing Events</span>
+            <Calendar className="h-4 w-4 text-nvidia-green" />
+          </div>
+          <div className="mt-2">
+            <strong className="text-xl font-bold text-white">{totalEvents} Operations</strong>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">Across selected filters</p>
+          </div>
+        </div>
+
+        <div className="bg-[#05080e] border border-nvidia-border/60 p-3 rounded flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Parts Shortfall Risk</span>
+            <AlertTriangle className={`h-4 w-4 ${shortfallCount > 0 ? "text-amber-400 animate-pulse" : "text-emerald-400"}`} />
+          </div>
+          <div className="mt-2">
+            <strong className={`text-xl font-bold ${shortfallCount > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+              {shortfallCount} Items
+            </strong>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+              {shortfallCount > 0 ? "Action required (PO / Allocation)" : "All parts buffer covered"}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-[#05080e] border border-nvidia-border/60 p-3 rounded flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Forecast CapEx Demand</span>
+            <DollarSign className="h-4 w-4 text-sky-400" />
+          </div>
+          <div className="mt-2">
+            <strong className="text-xl font-bold text-sky-400">${(totalCapExUsd / 1000).toFixed(0)}k USD</strong>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">Required parts inventory value</p>
+          </div>
+        </div>
+
+        <div className="bg-[#05080e] border border-nvidia-border/60 p-3 rounded flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase">Planner Depot Pre-allocation</span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div className="mt-2">
+            <strong className="text-xl font-bold text-emerald-400">{allocationRate}%</strong>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{allocatedCount} of {totalEvents} pre-reserved</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTROLS & FILTERS BAR */}
+      <div className="bg-[#05080e] border border-nvidia-border/70 p-3 rounded flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        {/* Horizon Filter Pills */}
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+            <Filter className="h-3.5 w-3.5 text-nvidia-green" /> Time Horizon:
+          </span>
+          <div className="flex items-center gap-1 bg-[#090d16] p-1 rounded border border-nvidia-border/60">
+            {(["all", "2M", "4M", "6M"] as const).map(h => (
+              <button
+                key={h}
+                onClick={() => setHorizonFilter(h)}
+                className={`px-2.5 py-1 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
+                  horizonFilter === h
+                    ? "bg-nvidia-green text-black font-bold"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {h === "all" ? "All (2M, 4M, 6M)" : `${h} Horizon`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Filters Right */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Data Center Dropdown */}
+          <div className="flex items-center gap-1.5 bg-[#090d16] border border-nvidia-border/70 rounded px-2.5 py-1 text-slate-300">
+            <Building2 className="h-3.5 w-3.5 text-slate-400" />
+            <select
+              value={dataCenterFilter}
+              onChange={(e) => setDataCenterFilter(e.target.value)}
+              className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+            >
+              <option value="all" className="bg-[#090d16]">All Data Centers</option>
+              {dcList.map(dc => (
+                <option key={dc} value={dc} className="bg-[#090d16]">{dc}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Search Box */}
+          <div className="flex items-center gap-1.5 bg-[#090d16] border border-nvidia-border/70 rounded px-2.5 py-1 w-full md:w-56">
+            <Search className="h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search hardware, part, DC..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-xs text-white focus:outline-none w-full font-mono placeholder:text-slate-500"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* VISUALIZATION CHARTS SECTION */}
+      <div className="bg-[#05080e] border border-nvidia-border/70 rounded p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between border-b border-nvidia-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-nvidia-green" />
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">Demand & Supply Analytics Visualizer</h4>
+            <InfoTag 
+              title="Demand & Supply Visualizer" 
+              text="Interactive projections comparing estimated component consumption across 2M, 4M, and 6M timeframes against current regional depot stock buffers." 
+            />
+          </div>
+          <div className="flex items-center gap-1 bg-[#090d16] p-0.5 rounded border border-nvidia-border/60">
+            <button
+              onClick={() => setActiveChartTab("monthly")}
+              className={`px-2.5 py-0.5 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                activeChartTab === "monthly" ? "bg-nvidia-green text-black font-bold" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Monthly Servicing & Parts Curve
+            </button>
+            <button
+              onClick={() => setActiveChartTab("dataCenter")}
+              className={`px-2.5 py-0.5 rounded text-[10px] font-mono transition-all cursor-pointer ${
+                activeChartTab === "dataCenter" ? "bg-nvidia-green text-black font-bold" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Data Center Failure Load
+            </button>
+          </div>
+        </div>
+
+        {activeChartTab === "monthly" ? (
+          <div>
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2">
+              <span>Monthly Component Replacement Projections (Stacked) vs Depot Stock Buffer Line</span>
+              <span className="text-nvidia-green">2M: Aug-Sep | 4M: Oct-Nov | 6M: Dec-Jan</span>
+            </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={FORECAST_PROJECTIONS_DATA} margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2333" />
+                  <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                  <YAxis yAxisId="left" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#f43f5e" tick={{ fill: "#f43f5e", fontSize: 11 }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#090d16", borderColor: "#1f293d", borderRadius: 6, fontSize: 12, color: "#fff" }} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                  <Bar yAxisId="left" dataKey="baseboards" name="HGX/DGX Baseboards" fill="#76b900" stackId="a" />
+                  <Bar yAxisId="left" dataKey="coolingPumps" name="Cooling Cold Plates & Pumps" fill="#38bdf8" stackId="a" />
+                  <Bar yAxisId="left" dataKey="vrmModules" name="VRM Power Regulators" fill="#f59e0b" stackId="a" />
+                  <Bar yAxisId="left" dataKey="hbmMemory" name="HBM3 Substrates" fill="#a855f7" stackId="a" />
+                  <Line yAxisId="right" type="monotone" dataKey="depotStockBuffer" name="Depot Stock Buffer" stroke="#f43f5e" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2">
+              <span>Data Center Servicing Intervention Load Across 2M, 4M, and 6M Horizons</span>
+              <span className="text-sky-400">CoreWeave & Meta highest predicted load</span>
+            </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dcLoadData} margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a2333" />
+                  <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 10 }} />
+                  <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#090d16", borderColor: "#1f293d", borderRadius: 6, fontSize: 12, color: "#fff" }} />
+                  <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                  <Bar dataKey="m2" name="2 Months Horizon" fill="#38bdf8" />
+                  <Bar dataKey="m4" name="4 Months Horizon" fill="#f59e0b" />
+                  <Bar dataKey="m6" name="6 Months Horizon" fill="#a855f7" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PREDICTIVE SERVICING & PARTS GRID TABLE */}
+      <div className="bg-[#05080e] border border-nvidia-border/70 rounded overflow-hidden">
+        <div className="p-3 border-b border-nvidia-border/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-nvidia-green" />
+            <h4 className="font-bold text-white text-xs uppercase tracking-wider">
+              2M / 4M / 6M Predictive Servicing & Parts Demand Schedule
+            </h4>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            Showing {filteredSchedules.length} of {predictiveSchedules.length} Scheduled Interventions
+          </span>
+        </div>
+
+        <div className="overflow-x-auto terminal-scroll">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-[#090d16] border-b border-nvidia-border/70 text-slate-400 font-mono text-[10px] uppercase">
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Horizon / Target Window</span>
+                    <InfoTag size="sm" title="Planning Window" text="Forecast horizon (2M = 60d, 4M = 120d, 6M = 180d) and targeted calendar month for preventive maintenance." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Data Center & Location</span>
+                    <InfoTag size="sm" title="Data Center" text="Target customer infrastructure site and rack cluster deployment." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Target Hardware</span>
+                    <InfoTag size="sm" title="Hardware Model" text="NVIDIA server architecture, cluster name, and node serial number." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Historical MTBF Failure Driver</span>
+                    <InfoTag size="sm" title="MTBF Driver" text="Empirical failure driver derived from historical telemetry analysis (e.g., VRM phase degradation, thermal junction fatigue)." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Required Parts & Qty</span>
+                    <InfoTag size="sm" title="Required Spares" text="Catalog spare part SKU and projected replacement unit volume." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Part Unit Cost</span>
+                    <InfoTag size="sm" title="Unit Cost" text="Individual hardware part price in USD." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Stock / Lead Time</span>
+                    <InfoTag size="sm" title="Depot Availability" text="Current depot stock available vs factory manufacturing lead time." />
+                  </div>
+                </th>
+                <th className="p-2.5">
+                  <div className="flex items-center gap-1">
+                    <span>Supply Status</span>
+                    <InfoTag size="sm" title="Buffer Status" text="Indicates whether current depot stock covers projected demand or if a procurement PO is required." />
+                  </div>
+                </th>
+                <th className="p-2.5 text-right">Planner Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-nvidia-border/40 font-mono text-[11px]">
+              {filteredSchedules.map((item) => {
+                return (
+                  <tr key={item.id} className="hover:bg-nvidia-green/5 transition-colors">
+                    {/* Horizon / Window */}
+                    <td className="p-2.5 align-top">
+                      <div className="flex flex-col gap-1">
+                        <span className={`w-fit px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          item.horizon === "2M"
+                            ? "bg-sky-500/10 text-sky-400 border border-sky-500/30"
+                            : item.horizon === "4M"
+                            ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                            : "bg-purple-500/10 text-purple-400 border border-purple-500/30"
+                        }`}>
+                          {item.horizon} Horizon
+                        </span>
+                        <strong className="text-white text-xs font-semibold">{item.targetWindow}</strong>
+                      </div>
+                    </td>
+
+                    {/* Data Center */}
+                    <td className="p-2.5 align-top">
+                      <div className="flex flex-col">
+                        <strong className="text-slate-200 font-semibold">{item.dataCenter}</strong>
+                        <span className="text-[10px] text-slate-400">{item.locationCode} | {item.rackLocation}</span>
+                      </div>
+                    </td>
+
+                    {/* Hardware */}
+                    <td className="p-2.5 align-top">
+                      <div className="flex flex-col">
+                        <span className="text-nvidia-green font-bold">{item.hardware}</span>
+                        <span className="text-[10px] text-slate-400">{item.serialOrCluster}</span>
+                      </div>
+                    </td>
+
+                    {/* Failure Driver */}
+                    <td className="p-2.5 align-top max-w-xs">
+                      <p className="text-slate-300 leading-tight text-[10px]">
+                        {item.failureDriver}
+                      </p>
+                      <span className="text-[9px] text-slate-500 mt-0.5 block">Historical MTBF: {item.historicalMtbfHours.toLocaleString()} hrs</span>
+                    </td>
+
+                    {/* Required Part */}
+                    <td className="p-2.5 align-top">
+                      <div className="flex flex-col">
+                        <strong className="text-white">{item.requiredQty}x {item.requiredPartName}</strong>
+                        <span className="text-[10px] text-slate-400">{item.requiredPartNumber}</span>
+                      </div>
+                    </td>
+
+                    {/* Unit Cost */}
+                    <td className="p-2.5 align-top font-bold text-slate-200">
+                      ${item.unitCostUsd.toLocaleString()}
+                    </td>
+
+                    {/* Stock / Lead time */}
+                    <td className="p-2.5 align-top">
+                      <div className="flex flex-col">
+                        <span className={item.inStockQty >= item.requiredQty ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                          {item.inStockQty} in depot
+                        </span>
+                        <span className="text-[10px] text-slate-400">{item.leadTimeDays}-day lead time</span>
+                      </div>
+                    </td>
+
+                    {/* Supply Status */}
+                    <td className="p-2.5 align-top">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        item.supplyStatus === "Stock Covered"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                          : item.supplyStatus === "Reorder Required"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                          : "bg-rose-500/10 text-rose-400 border border-rose-500/30 animate-pulse"
+                      }`}>
+                        {item.supplyStatus}
+                      </span>
+                    </td>
+
+                    {/* Planner Action */}
+                    <td className="p-2.5 align-top text-right">
+                      {item.allocated ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[10px]">
+                          <Check className="h-3 w-3" /> Reserved
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {item.inStockQty >= item.requiredQty ? (
+                            <button
+                              onClick={() => handlePreAllocate(item)}
+                              className="px-2.5 py-1 rounded bg-nvidia-green hover:bg-nvidia-green/90 text-black font-bold text-[10px] cursor-pointer shadow transition-all"
+                            >
+                              Pre-allocate Stock
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleIssuePo(item)}
+                              className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] cursor-pointer shadow transition-all"
+                            >
+                              Issue Express PO
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("orchestrator");
   const [controlTowerSubTab, setControlTowerSubTab] = useState<"forecasts" | "rma">("rma");
@@ -1919,7 +2786,7 @@ export default function App() {
   const [sentinelActionNotification, setSentinelActionNotification] = useState<string | null>(null);
 
   // NVSentinel Sub-Tabs & Inventory Workflow State
-  const [sentinelSubTab, setSentinelSubTab] = useState<"telemetry" | "repair-schedules" | "parts-inventory" | "dispatch-procurement">("telemetry");
+  const [sentinelSubTab, setSentinelSubTab] = useState<"telemetry" | "repair-schedules" | "parts-inventory" | "dispatch-procurement" | "service-forecast">("telemetry");
   const [repairSchedules, setRepairSchedules] = useState<RepairSchedule[]>(INITIAL_REPAIR_SCHEDULES);
   const [spareParts, setSpareParts] = useState<SparePartItem[]>(INITIAL_SPARE_PARTS);
   const [dispatchOrders, setDispatchOrders] = useState<PartsDispatchOrder[]>(INITIAL_DISPATCH_ORDERS);
@@ -2417,9 +3284,14 @@ export default function App() {
                   : "bg-transparent border-transparent text-slate-400 hover:bg-neutral-900/30 hover:text-slate-200"
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-nvidia-green animate-pulse" />
                 <span className="text-sm">NVSentinel Tracking & Monitoring</span>
+                <InfoTag 
+                  size="sm"
+                  title="NVSentinel Telemetry & Maintenance"
+                  text="Real-time hardware telemetry ingestion platform monitoring voltage ripple, thermal junction temperatures, repair schedules, spare parts depots, and 2M/4M/6M servicing forecasts." 
+                />
               </div>
               <ChevronRight className="h-3.5 w-3.5 opacity-65" />
             </button>
@@ -3555,6 +4427,11 @@ export default function App() {
                       >
                         <Radio className="h-3.5 w-3.5" />
                         <span>Telemetry & Predictive Health</span>
+                        <InfoTag 
+                          size="sm"
+                          title="Telemetry Stream"
+                          text="Live 100ms hardware sensor stream measuring voltage ripple, thermal junction spikes, and HBM ECC drift to detect faults pre-emptively."
+                        />
                       </button>
 
                       <button
@@ -3570,6 +4447,11 @@ export default function App() {
                         <span className="ml-1 bg-black/30 px-1.5 py-0.2 rounded text-[10px]">
                           {repairSchedules.filter(r => r.status !== "Completed").length} Active
                         </span>
+                        <InfoTag 
+                          size="sm"
+                          title="Repair Schedules"
+                          text="Track active field service repair tickets, assigned technicians, component attachments, and completion milestones."
+                        />
                       </button>
 
                       <button
@@ -3587,6 +4469,11 @@ export default function App() {
                             {spareParts.filter(p => p.inStock < p.safetyStock).length} Low Stock
                           </span>
                         )}
+                        <InfoTag 
+                          size="sm"
+                          title="Spare Parts Depot"
+                          text="Manage spare GPU modules, cold plates, VRM phases, and NVLink switches with safety stock buffer alerts and express reorders."
+                        />
                       </button>
 
                       <button
@@ -3602,6 +4489,31 @@ export default function App() {
                         <span className="ml-1 bg-black/30 px-1.5 py-0.2 rounded text-[10px]">
                           {dispatchOrders.length + procurementOrders.length}
                         </span>
+                        <InfoTag 
+                          size="sm"
+                          title="Dispatches & Procurement"
+                          text="Monitor active cold-chain air express shipments and supplier replenishment purchase orders."
+                        />
+                      </button>
+
+                      <button
+                        onClick={() => setSentinelSubTab("service-forecast")}
+                        className={`px-3 py-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          sentinelSubTab === "service-forecast"
+                            ? "bg-nvidia-green text-black font-bold shadow-md shadow-nvidia-green/20"
+                            : "bg-[#090d16] border border-nvidia-border/70 text-slate-300 hover:text-white hover:border-nvidia-green/50"
+                        }`}
+                      >
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        <span>2M, 4M & 6M Servicing & Parts Forecast</span>
+                        <span className="ml-1 bg-sky-500/20 text-sky-400 border border-sky-500/30 px-1.5 py-0.2 rounded text-[9px] font-bold">
+                          Predictive
+                        </span>
+                        <InfoTag 
+                          size="sm"
+                          title="2M / 4M / 6M Forecast"
+                          text="Calculates future maintenance schedules, component failure trends, and required spare parts buffer across 60, 120, and 180 day horizons."
+                        />
                       </button>
                     </div>
                   </div>
@@ -4052,6 +4964,18 @@ export default function App() {
               <DispatchAndProcurementView
                 dispatchOrders={dispatchOrders}
                 procurementOrders={procurementOrders}
+              />
+            )}
+
+            {/* SUB-TAB 5: 2M, 4M & 6M SERVICING & PARTS FORECAST */}
+            {sentinelSubTab === "service-forecast" && (
+              <ServiceAndPartsForecastView
+                spareParts={spareParts}
+                setSpareParts={setSpareParts}
+                procurementOrders={procurementOrders}
+                setProcurementOrders={setProcurementOrders}
+                onOpenPoModal={(part, defaultQty) => { setPoModalPart(part); setPoModalQty(defaultQty); }}
+                setTerminalFeed={setTerminalFeed}
               />
             )}
               </motion.div>
